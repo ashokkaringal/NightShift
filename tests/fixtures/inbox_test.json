@@ -1,0 +1,16 @@
+[
+  {
+    "id": "email-001",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "The ceiling above my bathroom has a small water stain, has had it for a week, nothing dripping yet.",
+    "received_at": "2026-06-29T23:15:00+00:00"
+  },
+  {
+    "id": "email-002",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Lightbulb in hallway is out, no rush.",
+    "received_at": "2026-06-29T22:40:00+00:00"
+  }
+]

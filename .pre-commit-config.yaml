@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: block-api-keys
+        name: Block common API key patterns
+        entry: bash -c 'git diff --cached --name-only | xargs grep -lE "AIza[0-9A-Za-z_-]{20,}|sk-[a-zA-Z0-9]{20,}|ghp_[0-9A-Za-z]{20,}" 2>/dev/null | grep -v ".env.example" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false

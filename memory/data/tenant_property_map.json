@@ -1,0 +1,16 @@
+[
+  {
+    "tenant_id": "tenant-123",
+    "tenant_email": "tenant123@example.com",
+    "property_id": "property-A",
+    "lease_start": "2025-01-01",
+    "lease_end": "2026-12-31"
+  },
+  {
+    "tenant_id": "tenant-456",
+    "tenant_email": "tenant456@example.com",
+    "property_id": "property-B",
+    "lease_start": "2025-06-01",
+    "lease_end": "2026-05-31"
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "id": "email-001",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "The ceiling above my bathroom has a small water stain, has had it for a week, nothing dripping yet.",
+    "received_at": "2026-06-29T23:15:00+00:00"
+  },
+  {
+    "id": "email-002",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Lightbulb in hallway is out, no rush.",
+    "received_at": "2026-06-29T22:40:00+00:00"
+  },
+  {
+    "id": "email-003",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Hi, no heat in unit 4B again. It is 52 degrees inside. Please send someone today.",
+    "received_at": "2026-06-29T21:05:00+00:00"
+  },
+  {
+    "id": "email-004",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "HOA newsletter: pool hours updated for July. No action needed.",
+    "received_at": "2026-06-29T20:30:00+00:00"
+  },
+  {
+    "id": "email-005",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "Smell of gas near the stove when I got home — turned off the burner knob but still faint odor.",
+    "received_at": "2026-06-29T19:50:00+00:00"
+  },
+  {
+    "id": "email-006",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Can you confirm you recieved my maintanance request from last week about the drippy faucet?",
+    "received_at": "2026-06-29T19:10:00+00:00"
+  },
+  {
+    "id": "email-007",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "City code violation notice scanned copy attached — says exterior stairs need railing repair by Friday.",
+    "received_at": "2026-06-29T18:45:00+00:00"
+  },
+  {
+    "id": "email-008",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Package room code not working again, not urgent.",
+    "received_at": "2026-06-29T18:00:00+00:00"
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "hoa-001",
+    "source": "hoa_portal",
+    "tenant_id": null,
+    "raw_text": "MISSION HOA: Quarterly assesment due July 1. Typo in portal — ammount $420 for unit 4B.",
+    "received_at": "2026-06-29T22:01:00+00:00"
+  },
+  {
+    "id": "hoa-002",
+    "source": "hoa_portal",
+    "tenant_id": null,
+    "raw_text": "Fwd: Fwd: Fwd: parking rules reminder — guest spots 2hr max!!! ignore if already read thx",
+    "received_at": "2026-06-29T21:30:00+00:00"
+  },
+  {
+    "id": "hoa-003",
+    "source": "hoa_portal",
+    "tenant_id": null,
+    "raw_text": "Fire alarm inspection scheduled July 8 between 9am-12pm. Building access required.",
+    "received_at": "2026-06-29T20:15:00+00:00"
+  }
+]
