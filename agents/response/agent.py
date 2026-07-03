@@ -33,6 +33,9 @@ class ResponseAgent:
         row = DraftRow(
             id=draft.id,
             classified_item_id=draft.classified_item_id,
+            raw_item_id=classified.raw_item_id,
+            urgency_tier=classified.urgency_tier,
+            summary=classified.summary,
             draft_text=draft.draft_text,
             status=draft.status,
             approved_by=draft.approved_by,

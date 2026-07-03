@@ -5,11 +5,11 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, event, inspect
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, event, inspect, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.engine import Base
-from db.fsm import validate_transition
+from db.fsm import validate_approve_metadata, validate_transition
 
 VALID_STATUSES = (
     "staged",
@@ -65,6 +65,9 @@ class DraftRow(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     classified_item_id: Mapped[str] = mapped_column(String, nullable=False)
+    raw_item_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    urgency_tier: Mapped[str | None] = mapped_column(String, nullable=True)
+    summary: Mapped[str | None] = mapped_column(String, nullable=True)
     draft_text: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
     approved_by: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -79,11 +82,22 @@ class DraftRow(Base):
 
 
 @event.listens_for(DraftRow, "before_update")
-def _enforce_fsm(_mapper: object, _connection: object, target: DraftRow) -> None:
+def _enforce_fsm(_mapper: object, connection: object, target: DraftRow) -> None:
     state = inspect(target)
     history = state.attrs.status.history
     if not history.has_changes():
         return
-    old_status = history.deleted[0] if history.deleted else target.status
+
     new_status = history.added[0] if history.added else target.status
+    if history.deleted:
+        old_status = history.deleted[0]
+    else:
+        row = connection.execute(
+            select(DraftRow.__table__.c.status).where(DraftRow.__table__.c.id == target.id)
+        ).first()
+        old_status = row[0] if row else new_status
+
+    if old_status == new_status:
+        return
     validate_transition(old_status, new_status)
+    validate_approve_metadata(new_status, target.approved_by, target.approved_at)

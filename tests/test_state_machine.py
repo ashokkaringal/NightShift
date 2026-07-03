@@ -65,3 +65,25 @@ def test_db_rejects_staged_to_ready_transition() -> None:
     finally:
         session.rollback()
         session.close()
+
+
+def test_approve_without_manager_fields_rejected() -> None:
+    session = SessionLocal()
+    try:
+        row = DraftRow(
+            id="draft-approve-meta",
+            classified_item_id="classified-approve",
+            draft_text="hello",
+            status="staged",
+            approved_by=None,
+            approved_at=None,
+        )
+        session.add(row)
+        session.commit()
+
+        row.status = "approved"
+        with pytest.raises(ValueError, match="approved_by"):
+            session.commit()
+    finally:
+        session.rollback()
+        session.close()
