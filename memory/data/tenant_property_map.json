@@ -12,5 +12,61 @@
     "property_id": "property-B",
     "lease_start": "2025-06-01",
     "lease_end": "2026-05-31"
+  },
+  {
+    "tenant_id": "tenant-789",
+    "tenant_email": "tenant789@example.com",
+    "property_id": "property-C",
+    "lease_start": "2025-03-01",
+    "lease_end": "2026-02-28"
+  },
+  {
+    "tenant_id": "tenant-101",
+    "tenant_email": "tenant101@example.com",
+    "property_id": "property-D",
+    "lease_start": "2024-09-01",
+    "lease_end": "2026-08-31"
+  },
+  {
+    "tenant_id": "tenant-202",
+    "tenant_email": "tenant202@example.com",
+    "property_id": "property-E",
+    "lease_start": "2025-02-01",
+    "lease_end": "2027-01-31"
+  },
+  {
+    "tenant_id": "tenant-303",
+    "tenant_email": "tenant303@example.com",
+    "property_id": "property-F",
+    "lease_start": "2025-05-01",
+    "lease_end": "2026-04-30"
+  },
+  {
+    "tenant_id": "tenant-404",
+    "tenant_email": "tenant404@example.com",
+    "property_id": "property-G",
+    "lease_start": "2025-07-01",
+    "lease_end": "2026-06-30"
+  },
+  {
+    "tenant_id": "tenant-505",
+    "tenant_email": "tenant505@example.com",
+    "property_id": "property-H",
+    "lease_start": "2025-08-01",
+    "lease_end": "2026-07-31"
+  },
+  {
+    "tenant_id": "tenant-606",
+    "tenant_email": "tenant606@example.com",
+    "property_id": "property-I",
+    "lease_start": "2025-04-01",
+    "lease_end": "2026-03-31"
+  },
+  {
+    "tenant_id": "tenant-707",
+    "tenant_email": "tenant707@example.com",
+    "property_id": "property-J",
+    "lease_start": "2025-09-01",
+    "lease_end": "2026-08-31"
   }
 ]

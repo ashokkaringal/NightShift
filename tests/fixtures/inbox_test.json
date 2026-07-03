@@ -4,13 +4,23 @@
     "source": "email",
     "tenant_id": "tenant-123",
     "raw_text": "The ceiling above my bathroom has a small water stain, has had it for a week, nothing dripping yet.",
-    "received_at": "2026-06-29T23:15:00+00:00"
+    "received_at": "2026-06-29T23:15:00+00:00",
+    "expected_urgency_tier": "RED"
   },
   {
     "id": "email-002",
     "source": "email",
     "tenant_id": "tenant-456",
     "raw_text": "Lightbulb in hallway is out, no rush.",
-    "received_at": "2026-06-29T22:40:00+00:00"
+    "received_at": "2026-06-29T22:40:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "email-003",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Hi, no heat in unit 4B again. It is 52 degrees inside. Please send someone today.",
+    "received_at": "2026-06-29T21:05:00+00:00",
+    "expected_urgency_tier": "RED"
   }
 ]

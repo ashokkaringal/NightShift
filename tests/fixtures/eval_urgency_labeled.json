@@ -1,0 +1,202 @@
+[
+  {
+    "id": "email-001",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "The ceiling above my bathroom has a small water stain, has had it for a week, nothing dripping yet.",
+    "received_at": "2026-06-29T23:15:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "email-002",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Lightbulb in hallway is out, no rush.",
+    "received_at": "2026-06-29T22:40:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "email-003",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Hi, no heat in unit 4B again. It is 52 degrees inside. Please send someone today.",
+    "received_at": "2026-06-29T21:05:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "email-004",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "HOA newsletter: pool hours updated for July. No action needed.",
+    "received_at": "2026-06-29T20:30:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "email-005",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "Smell of gas near the stove when I got home — turned off the burner knob but still faint odor.",
+    "received_at": "2026-06-29T19:50:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "email-006",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Can you confirm you recieved my maintanance request from last week about the drippy faucet?",
+    "received_at": "2026-06-29T19:10:00+00:00",
+    "expected_urgency_tier": "YELLOW"
+  },
+  {
+    "id": "email-007",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "City code violation notice scanned copy attached — says exterior stairs need railing repair by Friday.",
+    "received_at": "2026-06-29T18:45:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "email-008",
+    "source": "email",
+    "tenant_id": "tenant-456",
+    "raw_text": "Package room code not working again, not urgent.",
+    "received_at": "2026-06-29T18:00:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "eval-red-001",
+    "source": "email",
+    "tenant_id": "tenant-789",
+    "raw_text": "Water is actively leaking from the kitchen ceiling onto the floor right now.",
+    "received_at": "2026-06-29T17:30:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "eval-red-002",
+    "source": "email",
+    "tenant_id": "tenant-789",
+    "raw_text": "There is a strong smell of smoke in the hallway outside my unit.",
+    "received_at": "2026-06-29T17:00:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "eval-red-003",
+    "source": "email",
+    "tenant_id": "tenant-101",
+    "raw_text": "Sewage backup in the basement bathroom — standing water and odor.",
+    "received_at": "2026-06-29T16:45:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "eval-red-004",
+    "source": "email",
+    "tenant_id": "tenant-101",
+    "raw_text": "Broken pipe under sink — flooding the cabinet.",
+    "received_at": "2026-06-29T16:30:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "eval-red-005",
+    "source": "email",
+    "tenant_id": "tenant-202",
+    "raw_text": "Carbon monoxide alarm went off twice tonight. We opened windows.",
+    "received_at": "2026-06-29T16:00:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "eval-red-006",
+    "source": "email",
+    "tenant_id": "tenant-202",
+    "raw_text": "No hot water for three days — kids cannot shower.",
+    "received_at": "2026-06-29T15:30:00+00:00",
+    "expected_urgency_tier": "RED"
+  },
+  {
+    "id": "eval-green-001",
+    "source": "email",
+    "tenant_id": "tenant-303",
+    "raw_text": "Could you confirm pool hours for the holiday weekend? Thanks.",
+    "received_at": "2026-06-29T15:00:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "eval-green-002",
+    "source": "email",
+    "tenant_id": "tenant-303",
+    "raw_text": "Newsletter copy for building bulletin board — no response needed.",
+    "received_at": "2026-06-29T14:45:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "eval-green-003",
+    "source": "email",
+    "tenant_id": "tenant-404",
+    "raw_text": "Hallway light flickers sometimes but still works — low priority.",
+    "received_at": "2026-06-29T14:30:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "eval-green-004",
+    "source": "email",
+    "tenant_id": "tenant-404",
+    "raw_text": "Please update my parking pass sticker when convenient.",
+    "received_at": "2026-06-29T14:00:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "eval-green-005",
+    "source": "email",
+    "tenant_id": "tenant-505",
+    "raw_text": "Reminder: I submitted a routine filter change request last month.",
+    "received_at": "2026-06-29T13:30:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "eval-green-006",
+    "source": "email",
+    "tenant_id": "tenant-505",
+    "raw_text": "Mailbox label peeling off — cosmetic only, no rush.",
+    "received_at": "2026-06-29T13:00:00+00:00",
+    "expected_urgency_tier": "GREEN"
+  },
+  {
+    "id": "eval-yellow-001",
+    "source": "invoice",
+    "tenant_id": null,
+    "raw_text": "Invoice #4421 total $1,240 but line items sum to $1,180 — please review.",
+    "received_at": "2026-06-29T12:30:00+00:00",
+    "expected_urgency_tier": "YELLOW"
+  },
+  {
+    "id": "eval-yellow-002",
+    "source": "hoa_portal",
+    "tenant_id": "tenant-606",
+    "raw_text": "Annual fire inspection scheduled in 5 days — need access coordination.",
+    "received_at": "2026-06-29T12:00:00+00:00",
+    "expected_urgency_tier": "YELLOW"
+  },
+  {
+    "id": "eval-yellow-003",
+    "source": "email",
+    "tenant_id": "tenant-606",
+    "raw_text": "HOA fine notice for overdue landscaping invoice — deadline next week.",
+    "received_at": "2026-06-29T11:30:00+00:00",
+    "expected_urgency_tier": "YELLOW"
+  },
+  {
+    "id": "eval-yellow-004",
+    "source": "email",
+    "tenant_id": "tenant-707",
+    "raw_text": "Vendor invoice mismatch on elevator maintenance — attached PDF.",
+    "received_at": "2026-06-29T11:00:00+00:00",
+    "expected_urgency_tier": "YELLOW"
+  },
+  {
+    "id": "eval-yellow-005",
+    "source": "email",
+    "tenant_id": "tenant-707",
+    "raw_text": "City inspection follow-up: minor items due in 10 days.",
+    "received_at": "2026-06-29T10:30:00+00:00",
+    "expected_urgency_tier": "YELLOW"
+  }
+]
