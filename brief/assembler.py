@@ -142,6 +142,6 @@ def format_brief_text(brief: MorningBrief) -> str:
         lines.append("\nNo triage failures in latest run.")
 
     lines.append(
-        "\nNightShift drafts. It never sends — because the database won't let it."
+        "\nNightShift drafts. It never sends — phase 1 has no outbound send path; the database enforces manager approval."
     )
     return "\n".join(lines)

@@ -104,19 +104,58 @@ def generate_draft_reply(inp: DraftInput) -> DraftOutput:
     )
 
 
+_MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*"
+_WEEKDAY = r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)"
+_YEAR = r"\d{4}"
+
+
 def extract_deadline(raw_text: str) -> str | None:
-    """Best-effort deadline phrase from inbound message text."""
-    patterns = [
-        r"\bby\s+((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?)",
-        r"\bby\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)",
-        r"\bby\s+(\d{4}-\d{2}-\d{2})",
+    """Best-effort deadline phrase — prefers full dates from PDFs over weekday-only hints."""
+    candidates: list[tuple[int, str]] = []
+
+    for match in re.finditer(r"compliance\s+deadline:\s*([^\n]+)", raw_text, re.IGNORECASE):
+        candidates.append((100, match.group(1).strip()))
+
+    for match in re.finditer(r"(?<![a-z])deadline:\s*([^\n]+)", raw_text, re.IGNORECASE):
+        phrase = match.group(1).strip()
+        if phrase and not phrase.lower().startswith("compliance"):
+            candidates.append((92, phrase))
+
+    for match in re.finditer(
+        rf"\bby\s+({_WEEKDAY}\s+{_MONTH}\s+\d{{1,2}}\s+{_YEAR})",
+        raw_text,
+        re.IGNORECASE,
+    ):
+        candidates.append((94, match.group(1).strip()))
+
+    for match in re.finditer(
+        rf"\bby\s+({_MONTH}\s+\d{{1,2}}(?:,?\s+{_YEAR})?)",
+        raw_text,
+        re.IGNORECASE,
+    ):
+        candidates.append((90, match.group(1).strip()))
+
+    for match in re.finditer(r"\bby\s+(\d{4}-\d{2}-\d{2})", raw_text, re.IGNORECASE):
+        candidates.append((88, match.group(1).strip()))
+
+    for match in re.finditer(
         r"\b(resolve|complete|repair)\s+by\s+([^.\n]+)",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, raw_text, re.IGNORECASE)
-        if match:
-            return match.group(1).strip()
-    return None
+        raw_text,
+        re.IGNORECASE,
+    ):
+        candidates.append((80, match.group(2).strip()))
+
+    for match in re.finditer(rf"\bby\s+({_WEEKDAY})\b", raw_text, re.IGNORECASE):
+        candidates.append((35, match.group(1).strip()))
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda item: (-item[0], -len(item[1])))
+    top_score = candidates[0][0]
+    top = [phrase for score, phrase in candidates if score == top_score]
+    with_year = [phrase for phrase in top if re.search(_YEAR, phrase)]
+    return with_year[0] if with_year else top[0]
 
 
 def infer_source_type(raw_item_id: str, raw_text: str, fixture_source: str | None) -> str:

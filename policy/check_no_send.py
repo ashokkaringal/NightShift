@@ -1,4 +1,4 @@
-"""Policy: NightShift drafts. It never sends — enforced at code + DB layer."""
+"""Policy: NightShift drafts. It never sends — no send path in phase 1; HITL enforced at code + DB layer."""
 
 from __future__ import annotations
 

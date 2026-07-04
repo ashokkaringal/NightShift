@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from agents.response.agent import build_draft_text
-from agents.response.draft_reply_engine import DraftInput, generate_draft_reply
+from agents.response.draft_reply_engine import DraftInput, extract_deadline, generate_draft_reply
 from models.core import ClassifiedItem
 from datetime import datetime, timezone
 
@@ -65,6 +65,31 @@ def test_email_007_uses_city_template() -> None:
     assert "stop-work order" in text
     assert "city code violation notice at oak street duplex" in text.lower()
     assert "Unknown" not in text
+    assert "June 27 2026" in text
+
+
+def test_extract_deadline_prefers_pdf_date_over_weekday_in_body() -> None:
+    body = "City notice attached — repair by Friday."
+    pdf_block = (
+        "\n\n[Attachment: notice.pdf]\n"
+        "CITY CODE VIOLATION NOTICE\n"
+        "Compliance deadline: Friday June 27 2026"
+    )
+    assert extract_deadline(body + pdf_block) == "Friday June 27 2026"
+
+
+def test_extract_deadline_from_pdf_only_fixture_body() -> None:
+    from mcp.loaders import read_inbox
+
+    att = __import__("pathlib").Path(__file__).resolve().parent.parent / "mcp" / "fixtures" / "attachments" / "email-009-stop-work.pdf"
+    if not att.exists():
+        import pytest
+
+        pytest.skip("Run scripts/generate_pdf_fixtures.py first")
+
+    raw = next(i for i in read_inbox() if i.id == "email-009")
+    assert "by Friday" not in raw.raw_text.split("[Attachment:")[0]
+    assert extract_deadline(raw.raw_text) == "Wednesday July 9 2026"
 
 
 def test_email_001_draft_matches_subject_topic() -> None:

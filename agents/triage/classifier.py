@@ -43,6 +43,8 @@ def classify_with_rules(raw_text: str) -> ClassificationResult:
         "water stain",
         "no heat",
         "code violation",
+        "stop-work",
+        "stop work",
         "gas",
         "active leak",
         "actively leaking",

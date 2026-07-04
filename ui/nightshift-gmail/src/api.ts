@@ -8,6 +8,10 @@ import type {
 
 const BASE = '/api'
 
+export function attachmentDownloadUrl(rawItemId: string, filename: string): string {
+  return `${BASE}/attachments/${encodeURIComponent(rawItemId)}/${encodeURIComponent(filename)}`
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...init?.headers },

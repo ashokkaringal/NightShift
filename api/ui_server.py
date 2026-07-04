@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
+from urllib.parse import unquote
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from api.fixture_lookup import enrich_item
+from api.fixture_lookup import enrich_item, resolve_fixture_attachment_path
 from api.message_format import derive_message_subject, message_snippet
 from db.engine import SessionLocal
 from db.models import DraftRow, FailedItemRow, OvernightRunRow
@@ -58,6 +61,12 @@ class InboxItem(BaseModel):
     error_detail: str | None = None
 
 
+class AttachmentDetail(BaseModel):
+    filename: str
+    text: str
+    kind: str = "pdf"
+
+
 class InboxDetail(InboxItem):
     draft_text: str | None = None
     summary: str | None = None
@@ -67,6 +76,8 @@ class InboxDetail(InboxItem):
     manager_name: str | None = None
     property_label: str | None = None
     raw_text: str | None = None
+    body_text: str | None = None
+    attachments: list[AttachmentDetail] = Field(default_factory=list)
     received_at: str | None = None
     requires_hitl: bool = True
 
@@ -125,8 +136,9 @@ def _format_time(value: datetime | str | None) -> str | None:
 def _draft_to_item(row: DraftRow) -> InboxItem:
     enrich = enrich_item(row.raw_item_id)
     raw_text = enrich.get("raw_text")
-    subject = enrich.get("subject") or derive_message_subject(raw_text)
-    preview = message_snippet(raw_text) or row.summary or subject
+    body_text = enrich.get("body_text") or raw_text
+    subject = enrich.get("subject") or derive_message_subject(body_text)
+    preview = message_snippet(body_text) or row.summary or subject
     display_time = _format_time(row.approved_at) or _format_time(enrich.get("received_at"))
     return InboxItem(
         id=row.id,
@@ -306,6 +318,8 @@ def item_detail(item_id: str) -> InboxDetail:
                 manager_name=enrich.get("manager_name"),
                 property_label=enrich.get("property_label"),
                 raw_text=enrich.get("raw_text"),
+                body_text=enrich.get("body_text"),
+                attachments=enrich.get("attachments") or [],
                 received_at=enrich.get("received_at"),
                 requires_hitl=_requires_hitl(row),
             )
@@ -319,6 +333,8 @@ def item_detail(item_id: str) -> InboxDetail:
             return InboxDetail(
                 **base.model_dump(),
                 raw_text=enrich.get("raw_text"),
+                body_text=enrich.get("body_text"),
+                attachments=enrich.get("attachments") or [],
                 received_at=enrich.get("received_at"),
                 property_label=enrich.get("property_label"),
                 tenant_email=enrich.get("tenant_email"),
@@ -330,6 +346,20 @@ def item_detail(item_id: str) -> InboxDetail:
         raise HTTPException(status_code=404, detail=f"Item not found: {item_id}")
     finally:
         db.close()
+
+
+@app.get("/attachments/{raw_item_id}/{filename}")
+def download_attachment(raw_item_id: str, filename: str) -> FileResponse:
+    """Read-only fixture PDF download — only registered inbox attachments."""
+    safe_name = Path(unquote(filename)).name
+    path = resolve_fixture_attachment_path(raw_item_id, safe_name)
+    if path is None:
+        raise HTTPException(status_code=404, detail=f"Attachment not found: {safe_name}")
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        filename=safe_name,
+    )
 
 
 @app.post("/drafts/{draft_id}/approve")

@@ -1,10 +1,13 @@
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Paper from '@mui/material/Paper'
 import Skeleton from '@mui/material/Skeleton'
 import Typography from '@mui/material/Typography'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import MailOutlineIcon from '@mui/icons-material/MailOutlined'
+import { attachmentDownloadUrl } from '../api'
 import DraftReplyCard from './DraftReplyCard'
 import { layout, tierToken, surfaces, borders } from '../theme'
 import type { InboxDetail } from '../types'
@@ -34,6 +37,7 @@ interface MessageDetailProps {
 const detailPaneSx = {
   flex: 1,
   minWidth: layout.detailMinWidth,
+  minHeight: 0,
   overflowY: 'auto' as const,
   bgcolor: surfaces.detail,
   borderLeft: `1px solid ${borders.section}`,
@@ -82,37 +86,39 @@ export default function MessageDetail({
   const managerName = detail.manager_name ?? 'Maria Santos'
   const timestamp = detail.received_at ?? '—'
   const token = tierToken(detail.urgency_tier)
+  const messageBody = detail.body_text ?? detail.raw_text ?? detail.preview
+  const attachments = detail.attachments ?? []
 
   return (
-    <Box sx={{ ...detailPaneSx, p: 2 }}>
+    <Box sx={{ ...detailPaneSx, p: 1.25 }}>
       <Paper
         elevation={0}
         sx={{
-          borderRadius: 2,
+          borderRadius: 1.5,
           border: `1px solid ${borders.section}`,
           overflow: 'hidden',
           boxShadow: '0 1px 4px rgba(60,64,67,.1)',
           bgcolor: surfaces.detailCard,
         }}
       >
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 1.5 }}>
           <Typography
             sx={{
               fontWeight: 600,
-              fontSize: 18,
+              fontSize: 17,
               color: '#202124',
-              mb: 1.5,
+              mb: 0.75,
               lineHeight: 1.3,
             }}
           >
             {detail.subject}
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1.25 }}>
             <Avatar
               sx={{
-                width: 36,
-                height: 36,
+                width: 34,
+                height: 34,
                 bgcolor: token.accent,
                 fontSize: 15,
                 fontWeight: 600,
@@ -121,8 +127,8 @@ export default function MessageDetail({
               {senderInitial(detail)}
             </Avatar>
             <Box sx={{ minWidth: 0 }}>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 0.75 }}>
-                <Typography sx={{ fontSize: 14.5, fontWeight: 600, color: '#202124' }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 0.5 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#202124' }}>
                   {senderEmail}
                 </Typography>
                 <Typography sx={{ fontSize: 13, color: '#5f6368' }}>to {managerName}</Typography>
@@ -132,8 +138,8 @@ export default function MessageDetail({
                   display: 'flex',
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  gap: 1.25,
-                  mt: 0.75,
+                  gap: 0.75,
+                  mt: 0.35,
                 }}
               >
                 <Typography sx={{ fontSize: 12, color: '#80868b' }}>{timestamp}</Typography>
@@ -170,8 +176,9 @@ export default function MessageDetail({
             sx={{
               bgcolor: surfaces.messageBody,
               border: `1px solid ${borders.row}`,
-              borderRadius: 2,
-              p: 2,
+              borderRadius: 1.5,
+              px: 1.25,
+              py: 1,
             }}
           >
             <Typography
@@ -179,12 +186,98 @@ export default function MessageDetail({
                 fontSize: 14,
                 color: '#3c4043',
                 whiteSpace: 'pre-wrap',
-                lineHeight: 1.7,
+                lineHeight: 1.5,
               }}
             >
-              {detail.raw_text ?? detail.preview}
+              {messageBody}
             </Typography>
           </Box>
+
+          {attachments.length > 0 && (
+            <Box sx={{ mt: 1.25 }}>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: '#5f6368',
+                  mb: 0.5,
+                }}
+              >
+                Attachments
+              </Typography>
+              {attachments.map((att) => (
+                <Box
+                  key={att.filename}
+                  sx={{
+                    bgcolor: surfaces.messageBody,
+                    border: `1px solid ${borders.row}`,
+                    borderRadius: 1.5,
+                    px: 1.25,
+                    py: 1,
+                    mb: 0.75,
+                    '&:last-child': { mb: 0 },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#202124',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {att.filename}
+                    </Typography>
+                    <Button
+                      component="a"
+                      href={attachmentDownloadUrl(detail.raw_item_id, att.filename)}
+                      download={att.filename}
+                      size="small"
+                      variant="outlined"
+                      startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 15 }} />}
+                      sx={{
+                        flexShrink: 0,
+                        height: 26,
+                        minWidth: 0,
+                        px: 1.25,
+                        fontSize: 12,
+                        textTransform: 'none',
+                        borderColor: '#dadce0',
+                        color: '#1a73e8',
+                        '& .MuiButton-startIcon': { mr: 0.5 },
+                      }}
+                    >
+                      Download
+                    </Button>
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: 13,
+                      color: '#5f6368',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {att.text}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
 
           <DraftReplyCard
             detail={detail}

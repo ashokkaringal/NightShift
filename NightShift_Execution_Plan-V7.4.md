@@ -189,7 +189,7 @@ This execution plan splits the build into four parallel workstreams that converg
 
 Everything else in this document supports these three priorities:
 
-1. **Build the HITL state machine on Day 1, not Day 3.** It is the headline differentiator. If the `CHECK` constraint is not in the code, *"the database won't let it send"* is just a claim.
+1. **Build the HITL state machine on Day 1, not Day 3.** It is the headline differentiator. If the `CHECK` constraint is not in the code, *"phase 1 has no outbound send path, and the database enforces human approval"* is just a claim.
 2. **The water-stain case must classify RED.** Tune prompts until it does. This single demo moment carries more weight in the video than ten minutes of easy-case classifications.
 3. **Submit on Day 6 before 6:00 PM PT, not at 11:59 PM.** One submission per team, no grace period, draft writeups do not count.
 
@@ -373,7 +373,7 @@ class Draft(BaseModel):
 
 - Bearer token on every MCP call: `Authorization: Bearer <token>` (dev placeholder: `dev-token-placeholder`)
 - MCP server implementation: minimal **FastAPI or Flask** app with bearer-token validation
-- All MCP tools are **read-only** in v1
+- All MCP tools are **read-only** in phase 1
 - Mock fixtures should be **realistically messy** (typos, garbled HOA notices, run-on sentences) per TDD §2.4 — not textbook-clean prose
 - **MCP tool descriptions** must be meticulous (course Day 2): each tool's docstring names parameters, types, and constraints — the LLM calls tools based on descriptions
 - **Error handling:** failed MCP calls return structured error messages so agents can self-correct (one bounded retry per TDD §2.2)
@@ -871,7 +871,7 @@ Aligned to TDD §2.8 build priority order. Each day ends with a **named integrat
 
 ### 5.3 Team Member C — HITL Safety, Drafting & Morning Brief
 
-**Mission:** Own the headline differentiator — **"the database won't let it send"** — plus the manager-facing Morning Brief.
+**Mission:** Own the headline differentiator — **"phase 1 has no outbound send path; the database enforces manager approval"** — plus the manager-facing Morning Brief.
 
 #### Deliverables
 
@@ -1081,7 +1081,7 @@ flowchart LR
 | Time-to-Morning-Brief | < 10 min / 50 items | A | OTel + batch timer |
 | Per-item latency | < 5 sec (Flash) | B | OTel span |
 | Memory lookup | ≥ 98% | B | Eval fixtures |
-| Draft acceptance | ≥ 60% | C | Track in demo (v1: qualitative) |
+| Draft acceptance | ≥ 60% | C | Track in demo (phase 1: qualitative) |
 | Auditability | 100% traced | D | OTel |
 | Token cost | tracked | D | OTel token attributes |
 
@@ -1093,7 +1093,7 @@ flowchart LR
 | Policy / hybrid enforcement | `policy/check_no_send.py` | D | Jul 4 |
 | OpenTelemetry audit trail | `observability/tracing.py` | D | Jul 4 |
 | Optional Cloud Run deploy | `docker/Dockerfile`, `cloudrun.yaml` | A | Jul 4–5 |
-| A2A scope statement | Writeup: internal ADK graph only; A2A reserved for v2 | D | Jul 5 |
+| A2A scope statement | Writeup: internal ADK graph only; A2A reserved for phase 2 | D | Jul 5 |
 | Threat model (Effective Trust) | Writeup: 2–3 failure scenarios + HITL backstop | D | Jul 5 |
 
 ---
@@ -1146,7 +1146,7 @@ Complete every item before July 6, 11:59 PM PT. **Draft writeups do not count.**
 - [ ] Hard case walkthrough in text
 - [ ] Key Concepts table (5 items)
 - [ ] 2–3 rows from TDD §2.7 Architecture Decision Log
-- [ ] **A2A not used** — one sentence why (internal ADK graph; A2A for external agents in v2; course Day 2)
+- [ ] **A2A not used** — one sentence why (internal ADK graph; A2A for external agents in phase 2; course Day 2)
 - [ ] **7-pillar Effective Trust** — table or bullets mapping pillars to NightShift (§0.9)
 - [ ] **Day 4 HITL parallel** — cite expense-approval agent; explain stricter staging guarantee
 - [ ] **SDD narrative** — Gherkin is source of truth; code is disposable (course Day 5)

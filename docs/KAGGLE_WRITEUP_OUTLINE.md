@@ -6,14 +6,14 @@ Use this scaffold for the shared Google Doc and Kaggle submission. Target **1,80
 
 - Property managers face scattered overnight communications (email, HOA, invoices).
 - Safety risk: mis-prioritized habitability issues and unauthorized outbound replies.
-- **Headline:** NightShift drafts. It never sends — because the database won't let it.
+- **Headline:** NightShift drafts. It never sends. Not because the prompt says so — because phase 1 has no outbound send path, and the database enforces human approval.
 
 ## 2. Solution overview (~350 words)
 
 - Three-agent ADK graph: Ingestion → Triage → Response.
 - Deterministic memory lookup (`tenant_id → property_id`), not LLM guessing.
 - HITL staging DB — every draft starts `staged`; manager Approve / Reject / Snooze.
-- Mock MCP fixtures only in v1 (no live Gmail).
+- Mock MCP fixtures only in phase 1 (no live Gmail). **Phase 2:** Gmail read-only swap-in behind `read_inbox` (same `RawItem` contract).
 
 ## 3. Architecture (~400 words)
 
@@ -25,6 +25,7 @@ Use this scaffold for the shared Google Doc and Kaggle submission. Target **1,80
 ## 4. Hard case + eval results (~400 words)
 
 - `email-001` water stain → RED with stated rationale.
+- **`email-009` PDF beat:** body has no deadline; stop-work PDF attachment supplies `Wednesday July 9 2026`; UI shows split body + Attachments + Download; draft cites PDF date.
 - Confusion matrix from `python main.py eval-urgency` (attach screenshot).
 - Metrics: accuracy, false-RED, false-GREEN vs PRD targets.
 

@@ -1,12 +1,12 @@
 # NightShift — Agent Project Rules
 
-NightShift drafts. It never sends — because the database won't let it.
+NightShift drafts. It never sends — phase 1 has no outbound send path; the database enforces manager approval.
 
 ## Constraint harness (course Day 1 factory model)
 
 - **No code path** may set draft `status` to `sent` or skip `approved` before `ready_to_send`.
 - **HITL:** every outbound draft starts as `staged`; only manager action transitions to `approved`.
-- **MCP tools are read-only** in v1 — no send/write tools.
+- **MCP tools are read-only** in phase 1 — no send/write tools.
 - **Never commit** API keys, bearer tokens, or tenant PII in logs or traces.
 - **Red/Blue/Green:** scan inbound content (`security/red_team.py`); validate draft output (`security/output_validation.py`); PII redaction in OTel (`observability/redaction.py`).
 

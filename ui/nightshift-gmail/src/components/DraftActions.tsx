@@ -16,8 +16,8 @@ interface DraftActionsProps {
 const pillSx = {
   textTransform: 'none' as const,
   borderRadius: 999,
-  px: 2.25,
-  py: 0.75,
+  px: 1.75,
+  py: 0.5,
   fontSize: 14,
   fontWeight: 500,
   boxShadow: 'none',
@@ -39,7 +39,7 @@ export default function DraftActions({
   }
 
   return (
-    <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+    <Box sx={{ display: 'flex', gap: 0.75, mt: 1.25, flexWrap: 'wrap' }}>
       <Button
         variant="contained"
         disabled={disabled}

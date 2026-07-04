@@ -38,9 +38,9 @@ Of NightShift's real strengths — domain specificity, HITL safety architecture,
 
 **The headline, stated as it should appear in the Writeup title/subtitle and the first 10 seconds of the video:**
 
-> "NightShift drafts. It never sends. Not because the prompt says so — because the database won't let it."
+> "NightShift drafts. It never sends. Not because the prompt says so — because phase 1 has no outbound send path, and the database enforces human approval."
 
-This reframes a safety feature (often a checkbox item judges skim past) into the actual selling point. It also directly answers the "why agents, specifically" beat (§3.2) better than a generic efficiency pitch would: the answer becomes "because the overnight inbox needs judgment, and judgment needs a human backstop that can't be bypassed by an agent having a bad night."
+This reframes a safety feature (often a checkbox item judges skim past) into the actual selling point. Phase 1 has no Gmail or SMTP send integration — drafts stop at `approved` in SQLite until a future outbound path exists. The database enforces that HITL gate (no auto-send, no skip to `sent`), so the guarantee holds even if an agent misbehaves. It also directly answers the "why agents, specifically" beat (§3.2) better than a generic efficiency pitch would: the answer becomes "because the overnight inbox needs judgment, and judgment needs a human backstop that can't be bypassed by an agent having a bad night."
 
 ### 0.5.2 The domain-specificity layer (supporting evidence, not a second headline)
 
@@ -65,7 +65,7 @@ Two tracks both fit NightShift legitimately:
 
 ### 1.1 Core Value Proposition & Objective
 
-**NightShift drafts. It never sends. Not because the prompt says so — because the database won't let it.** (See §0.5.1 for why this is the headline, not just a feature.)
+**NightShift drafts. It never sends. Not because the prompt says so — because phase 1 has no outbound send path, and the database enforces human approval.** (See §0.5.1 for why this is the headline, not just a feature.)
 
 NightShift is an overnight AI assistant for property managers. While the manager sleeps, it ingests every overnight communication — city notices, tenant reports, HOA messages, vendor invoices, and inspection alerts — from multiple disconnected sources, and produces a single, ranked **Morning Brief** by the time the manager wakes up.
 
@@ -75,13 +75,13 @@ NightShift is an overnight AI assistant for property managers. While the manager
 
 ### 1.2 Non-Goals (Out of Scope)
 
-Explicitly excluded from v1, to keep the engineering surface bounded and to make the safety guarantees auditable:
+Explicitly excluded from phase 1, to keep the engineering surface bounded and to make the safety guarantees auditable:
 
 - NightShift does **not** place phone calls or handle voice channels.
 - NightShift does **not** negotiate vendor pricing or terms — it flags billing anomalies, it doesn't resolve them.
 - NightShift does **not** auto-send under any circumstance, including high-confidence GREEN classifications. Every draft, regardless of urgency tier, sits in staging until a human approves it.
 - NightShift does **not** make legal determinations about city notices (e.g., whether a fine is valid) — it surfaces and routes, a human or counsel decides.
-- NightShift does **not** manage multi-night-shift handoffs across time zones in v1 (single property-manager-per-portfolio assumption).
+- NightShift does **not** manage multi-night-shift handoffs across time zones in phase 1 (single property-manager-per-portfolio assumption).
 
 ### 1.3 Success Metrics
 
@@ -94,7 +94,7 @@ Explicitly excluded from v1, to keep the engineering surface bounded and to make
 | Per-item processing latency | < 5 sec/item (Flash classification call) | Operational health metric — distinguishes a slow model call from a slow tool call, see TDD §2.5 trace attributes |
 | Memory lookup success rate | ≥ 98% (tenant → property resolved without fallback) | A low rate here means the memory schema is incomplete, not that the LLM is failing — useful for distinguishing failure causes |
 | Draft acceptance rate (approved with no edits) | ≥ 60% | Measures whether drafts are actually useful or just busywork to edit |
-| Human-approval turnaround time | Tracked, no hard target in v1 | How long items sit in `staged` before a manager acts — useful operational signal even though NightShift can't and shouldn't try to influence it |
+| Human-approval turnaround time | Tracked, no hard target in phase 1 | How long items sit in `staged` before a manager acts — useful operational signal even though NightShift can't and shouldn't try to influence it |
 | Token cost per overnight run | Tracked, budgeted | Keeps the system commercially viable at scale |
 | Auditability | 100% of classifications traceable via OpenTelemetry | Directly demonstrates the Day 5 observability standard — every RED/YELLOW/GREEN call should be explainable after the fact, not just in aggregate |
 
@@ -113,7 +113,7 @@ Explicitly excluded from v1, to keep the engineering surface bounded and to make
 
 1. Manager opens the Morning Brief — items grouped by urgency, RED first.
 2. For each item: read summary → read draft response (if any) → **Approve / Edit & Approve / Reject / Snooze.**
-3. Only on explicit Approve does a message move from staging to "ready to send" — and per Non-Goals, actual sending in v1 is itself a manual action the manager confirms (auto-send is not implemented even post-approval, until the production hardening phase explicitly enables it under its own audited flag).
+3. Only on explicit Approve does a message move from staging to "ready to send" — and per Non-Goals, actual sending in phase 1 is itself a manual action the manager confirms (auto-send is not implemented even post-approval, until the production hardening phase explicitly enables it under its own audited flag).
 
 ### 1.5 Functional Scope & Rules
 
@@ -156,7 +156,7 @@ This is your project report, not a duplicate of the PRD/TDD — keep it tight ag
 
 | Segment | Target length | Content |
 |---|---|---|
-| Hook + problem statement | ~45 sec | Open with the headline line itself, spoken: *"NightShift drafts. It never sends. Not because the prompt says so — because the database won't let it."* Then the overnight-inbox pain point with the concrete failure mode (a missed early water-damage sign becoming a city violation), not generic "businesses need automation" framing. **Optional cheap addition:** a 5-second before/after split-screen here — chaotic mock inbox on the left, the clean ranked Morning Brief on the right — is inexpensive to produce and gives the video an immediate visual hook before any narration even starts |
+| Hook + problem statement | ~45 sec | Open with the headline line itself, spoken: *"NightShift drafts. It never sends. Not because the prompt says so — because phase 1 has no outbound send path, and the database enforces human approval."* Then the overnight-inbox pain point with the concrete failure mode (a missed early water-damage sign becoming a city violation), not generic "businesses need automation" framing. **Optional cheap addition:** a 5-second before/after split-screen here — chaotic mock inbox on the left, the clean ranked Morning Brief on the right — is inexpensive to produce and gives the video an immediate visual hook before any narration even starts |
 | Why agents | ~30 sec | Direct answer: this task requires reading unstructured, ambiguous text and making a judgment call a fixed rules engine can't — which is exactly what gets proven in the demo segment below, so this beat should explicitly forward-reference it ("watch what happens with a genuinely ambiguous case in a minute") rather than standing alone |
 | Architecture | ~50 sec | Walk through the TDD §2.2 graph on screen — name the three agents, the MCP/memory connections — kept tight since the demo is where the real screen time goes |
 | **The hard-case demo** | ~2 min | This is the segment that should get the most time and the most rehearsal. Run the ambiguous water-stain item (§1.5) through the live system. Show `TriageAgent`'s actual reasoning trace landing on RED — script the exact on-screen text rather than leaving it to whatever the model happens to output live, e.g.: *"Reasoning: 'small water stain... for a week' matches early structural water-damage pattern (RED). Even without active drip, risk of code-violation escalation within days is high."* Then cut to the manager's Morning Brief showing that same rationale surfaced, and the Approve/Reject/Snooze action — closing the loop back to the headline hook by explicitly showing the draft sitting in `staged`, untouchable, until that click happens |

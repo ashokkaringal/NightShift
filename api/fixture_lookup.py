@@ -9,8 +9,10 @@ from pathlib import Path
 
 from api.message_format import derive_message_subject
 from memory.store import get_property_display_name, get_tenant_email, resolve_property_id
+from mcp.pdf_parser import extract_pdf_text, resolve_attachment_path
 
 FIXTURES = Path(__file__).resolve().parent.parent / "mcp" / "fixtures"
+ATTACHMENTS_DIR = FIXTURES / "attachments"
 
 SOURCE_SENDER = {
     "email": "tenant",
@@ -35,23 +37,74 @@ def _load_all_fixtures() -> dict[str, dict]:
     inbox = FIXTURES / "inbox.json"
     if inbox.exists():
         for row in json.loads(inbox.read_text(encoding="utf-8")):
-            merged[row["id"]] = row
+            merged[row["id"]] = _inbox_fixture_row(row)
     hoa = FIXTURES / "hoa_portal.json"
     if hoa.exists():
         for row in json.loads(hoa.read_text(encoding="utf-8")):
             merged[row["id"]] = row
     invoice_dir = FIXTURES / "invoices"
     if invoice_dir.exists():
-        for txt in invoice_dir.glob("*.txt"):
-            item_id = f"invoice-{txt.stem}"
+        seen: set[str] = set()
+        for path in sorted(invoice_dir.glob("*")):
+            if path.suffix.lower() not in {".txt", ".pdf"}:
+                continue
+            if path.stem in seen:
+                continue
+            txt_alt = path.with_suffix(".txt")
+            if path.suffix.lower() == ".pdf" and txt_alt.exists():
+                continue
+            seen.add(path.stem)
+            item_id = f"invoice-{path.stem}"
+            if path.suffix.lower() == ".pdf":
+                body = extract_pdf_text(path).text
+            else:
+                body = path.read_text(encoding="utf-8").strip()
             merged[item_id] = {
                 "id": item_id,
                 "source": "invoice",
                 "tenant_id": None,
-                "raw_text": txt.read_text(encoding="utf-8").strip(),
-                "received_at": datetime.fromtimestamp(txt.stat().st_mtime).isoformat(),
+                "raw_text": body,
+                "received_at": datetime.fromtimestamp(path.stat().st_mtime).isoformat(),
             }
     return merged
+
+
+def resolve_fixture_attachment_path(raw_item_id: str, filename: str) -> Path | None:
+    """Return on-disk attachment only when registered on the inbox fixture row."""
+    safe_name = Path(filename).name
+    if not safe_name or safe_name != filename:
+        return None
+
+    inbox = FIXTURES / "inbox.json"
+    if not inbox.exists():
+        return None
+
+    attachments_root = ATTACHMENTS_DIR.resolve()
+    for row in json.loads(inbox.read_text(encoding="utf-8")):
+        if row.get("id") != raw_item_id:
+            continue
+        for att in row.get("attachments") or []:
+            att_name = att.get("filename") or Path(att.get("path", "")).name
+            if att_name != safe_name:
+                continue
+            rel = att.get("path") or att.get("filename") or ""
+            candidate = resolve_attachment_path(FIXTURES, rel).resolve()
+            if candidate.is_file() and candidate.is_relative_to(attachments_root):
+                return candidate
+    return None
+
+
+def _inbox_fixture_row(row: dict) -> dict:
+    """Mirror loader attachment merge for UI enrichment."""
+    from mcp.loaders import _append_attachment_text, load_attachments_from_row
+
+    body = row.get("raw_text", "")
+    return {
+        **row,
+        "body_text": body,
+        "attachments": load_attachments_from_row(row),
+        "raw_text": _append_attachment_text(body, row),
+    }
 
 
 def enrich_item(raw_item_id: str | None) -> dict:
@@ -78,7 +131,8 @@ def enrich_item(raw_item_id: str | None) -> dict:
     )
 
     raw_text = fixture.get("raw_text")
-    subject = derive_message_subject(raw_text, source=source)
+    body_text = fixture.get("body_text") or raw_text
+    subject = derive_message_subject(body_text, source=source)
 
     return {
         "sender_label": SOURCE_SENDER.get(source, _guess_sender(raw_item_id)),
@@ -91,6 +145,8 @@ def enrich_item(raw_item_id: str | None) -> dict:
         "property_label": property_label,
         "subject": subject,
         "raw_text": raw_text,
+        "body_text": body_text,
+        "attachments": fixture.get("attachments") or [],
         "received_at": fixture.get("received_at"),
     }
 

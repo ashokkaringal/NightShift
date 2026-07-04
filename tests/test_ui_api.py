@@ -126,9 +126,64 @@ def test_item_detail_enriches_fixture() -> None:
     assert detail["draft_text"]
     assert detail["property_label"] == "Oak Street Duplex"
     assert detail["raw_text"]
+    assert detail["body_text"]
+    assert detail["attachments"] == []
     assert detail["subject"] == "Bathroom ceiling water stain"
     assert detail["subject"] != detail["raw_text"]
     assert detail["sender_email"] == "tenant123@example.com"
+
+
+def test_download_fixture_attachment() -> None:
+    from pathlib import Path
+
+    pdf = Path(__file__).resolve().parent.parent / "mcp" / "fixtures" / "attachments" / "email-009-stop-work.pdf"
+    if not pdf.exists():
+        pytest.skip("Run scripts/generate_pdf_fixtures.py first")
+
+    resp = client.get("/attachments/email-009/stop-work-order.pdf")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/pdf")
+    assert resp.content[:4] == b"%PDF"
+
+
+def test_download_attachment_rejects_unknown_file() -> None:
+    resp = client.get("/attachments/email-009/missing.pdf")
+    assert resp.status_code == 404
+
+
+def test_download_attachment_rejects_path_traversal() -> None:
+    resp = client.get("/attachments/email-009/..%2F..%2F..%2Fetc%2Fpasswd")
+    assert resp.status_code == 404
+
+
+def test_item_detail_includes_pdf_attachments_for_email_007() -> None:
+    from pathlib import Path
+
+    pdf = Path(__file__).resolve().parent.parent / "mcp" / "fixtures" / "attachments" / "email-007-notice.pdf"
+    if not pdf.exists():
+        pytest.skip("Run scripts/generate_pdf_fixtures.py first")
+
+    session = SessionLocal()
+    try:
+        _seed_draft(
+            session,
+            id="draft-email-007",
+            classified_item_id="classified-email-007",
+            raw_item_id="email-007",
+            urgency_tier="RED",
+            summary="RED – City code violation notice | Reasoning: code",
+            draft_text="Draft pending review.",
+        )
+    finally:
+        session.close()
+
+    detail = client.get("/items/draft-email-007").json()
+    assert detail["body_text"]
+    assert "[Attachment:" not in detail["body_text"]
+    assert len(detail["attachments"]) == 1
+    assert detail["attachments"][0]["filename"] == "code-violation-notice.pdf"
+    assert "June 27 2026" in detail["attachments"][0]["text"]
+    assert "[Attachment:" in detail["raw_text"]
 
 
 def test_inbox_subject_differs_from_body_snippet() -> None:

@@ -46,7 +46,13 @@
     "source": "email",
     "tenant_id": "tenant-123",
     "raw_text": "City code violation notice scanned copy attached — says exterior stairs need railing repair by Friday.",
-    "received_at": "2026-06-29T18:45:00+00:00"
+    "received_at": "2026-06-29T18:45:00+00:00",
+    "attachments": [
+      {
+        "filename": "code-violation-notice.pdf",
+        "path": "attachments/email-007-notice.pdf"
+      }
+    ]
   },
   {
     "id": "email-008",
@@ -54,5 +60,18 @@
     "tenant_id": "tenant-456",
     "raw_text": "Package room code not working again, not urgent.",
     "received_at": "2026-06-29T18:00:00+00:00"
+  },
+  {
+    "id": "email-009",
+    "source": "email",
+    "tenant_id": "tenant-123",
+    "raw_text": "Please review the attached stop-work order from the city inspector.",
+    "received_at": "2026-06-29T17:30:00+00:00",
+    "attachments": [
+      {
+        "filename": "stop-work-order.pdf",
+        "path": "attachments/email-009-stop-work.pdf"
+      }
+    ]
   }
 ]

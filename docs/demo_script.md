@@ -1,37 +1,55 @@
 # NightShift Demo Script (2-minute hard-case segment)
 
+Full UI setup: see [README § Gmail-style UI](../README.md#gmail-style-ui-hitl-demo).
+
 ## Setup
 
 ```bash
 source .venv/bin/activate
-python db/init_db.py
-python main.py run-overnight
+pip install -r requirements.txt
+cp .env.example .env   # add GEMINI_API_KEY; tune GEMINI_LIVE_ONLY_IDS (below)
+
+python scripts/generate_pdf_fixtures.py   # once — email-007 / email-009 PDF attachments
+bash scripts/rebuild_dev_db.sh            # fresh overnight run → nightshift.db
+
+# Terminal 2: bash scripts/run_ui_api.sh   (:8001)
+# Terminal 3: cd ui/nightshift-gmail && npm run dev   (:5173)
 ```
 
 ## Beat 1 — Problem (15 sec)
 
 > "Property managers wake up to dozens of overnight emails. NightShift triages them overnight but **never sends** — every draft stays staged until a human approves."
 
-## Gemini demo pair (RED + YELLOW)
+Point at the safety banner:
 
-In `.env` set:
+> "Phase 1 records manager approval only — there is no outbound send path."
 
-```bash
-GEMINI_LIVE_ONLY_IDS=email-001,email-006
-```
+## Gemini live subset (optional)
 
-| ID | Tier | Subject |
-|----|------|---------|
-| `email-001` | **RED** | Bathroom ceiling water stain |
-| `email-006` | **YELLOW** | Drippy faucet follow-up |
-
-Avoid `email-007` in this list — it is also **RED** (city code violation).
+For live Gemini triage + drafting on demo fixtures only (saves quota):
 
 ```bash
-rm -f nightshift.db && python db/init_db.py && python main.py run-overnight
+TRIAGE_USE_STUB=0
+DRAFT_USE_STUB=0
+GEMINI_TRIAGE_MODEL=gemini-2.5-flash,gemini-3.5-flash
+GEMINI_DRAFT_MODEL=gemini-2.5-flash,gemini-3.5-flash
+GEMINI_LIVE_ONLY_IDS=email-001,email-006,email-007,email-009
 ```
 
-In the UI: open **Inbox** (not only "Urgent RED") to see both tiers.
+| ID | Tier | Subject | Demo role |
+|----|------|---------|-----------|
+| `email-001` | **RED** | Bathroom ceiling water stain | Hard case (eval) |
+| `email-006` | **YELLOW** | Drippy faucet follow-up | HITL on non-RED tier |
+| `email-007` | **RED** | City code violation notice | PDF date beats “Friday” in body |
+| `email-009` | **RED** | Stop-work order notice | **Deadline only in PDF** |
+
+After changing `.env`:
+
+```bash
+bash scripts/rebuild_dev_db.sh
+```
+
+In the UI: open **Inbox** (not only "Urgent RED") to see RED + YELLOW mix.
 
 ## Beat 2 — Hard case triage (45 sec)
 
@@ -46,6 +64,29 @@ Point out on screen:
 - **RED** tier first
 - Rationale: *"small water stain... for a week"* → early structural water-damage pattern
 - Draft status: **staged** (not sent)
+
+## Beat 2b — PDF attachment (`email-009`) (30 sec)
+
+**Best UI demo for PDF ingestion** — deadline exists only in the attachment.
+
+1. In the UI search box, type `stop-work`
+2. Select **Stop-work order notice** (`email-009`, RED, **17:30**)
+3. In the detail pane, show **three layers**:
+   - **Message body** — one line only: *"Please review the attached stop-work order…"* (no deadline)
+   - **Attachments** — `stop-work-order.pdf` with extracted text including **`Compliance deadline: Wednesday July 9 2026`**
+   - Click **Download** — real PDF file (read-only fixture; audit trail for manager)
+4. Scroll to **NightShift draft reply** — draft should cite **Wednesday July 9 2026** (from PDF via `extract_deadline()`, not from body text)
+5. Optional compare **`email-007`**: body says “by Friday”; attachment + draft use full **`June 27 2026`**
+
+Voiceover hook:
+
+> "The email body doesn't contain the deadline — only the PDF does. NightShift extracts attachment text for triage and drafting, while the manager can download the source document."
+
+## Beat 2c — Architecture swap-in (15 sec, optional)
+
+Show [`docs/architecture.png`](../docs/architecture.png):
+
+> "Read-only MCP tools return `RawItem` objects. Phase 1 uses fixtures; **phase 2** swaps `read_inbox` for Gmail read-only without touching the ADK graph or HITL database. NightShift still never sends."
 
 ## Beat 3 — Manager approve (30 sec)
 
@@ -72,16 +113,18 @@ python main.py snooze --draft-id <draft-id>
 
 With API on `:8001` and UI on `:5173`:
 
-1. Open **Inbox** → select `email-001` (RED water stain)
+1. Open **Inbox** → select `email-001` (RED water stain) **or** finish on `email-009` after Beat 2b
 2. Confirm badge shows **STAGED** and draft text is visible
-3. Click **Approve draft** — badge becomes **APPROVED** (still no send path)
+3. Click **Approve draft** — badge becomes **APPROVED** (outbound send still disabled in phase 1)
 4. Optional: **Reject**, **Snooze**, or edit text + **Save edits** on a YELLOW item (`email-006`)
 
 GREEN items show **NO REPLY** — no Approve button (PRD non-goal: no auto-send even for GREEN).
 
+**Regression check:** reject on a staged item keeps the detail pane on the same message (Playwright: `bash scripts/run_ui_e2e.sh`).
+
 ## Beat 4 — Safety hook (15 sec)
 
-> "NightShift drafts. It never sends — because the database won't let it."
+> "NightShift drafts. It never sends. Not because the prompt says so — because phase 1 has no outbound send path, and the database enforces human approval."
 
 Optional: attempt invalid transition in tests:
 
@@ -94,3 +137,9 @@ pytest tests/test_state_machine.py -v
 If any `triage_failed` rows exist, brief shows:
 
 **"COULD NOT CLASSIFY — NEEDS MANUAL REVIEW"**
+
+## Phase 2 teaser (post-capstone, 10 sec)
+
+> "Next we wire `read_inbox` to a test Gmail account with read-only OAuth — same `RawItem` pipeline, still no send scope. Fixtures stay the default for eval and CI."
+
+See README **Phase 2 roadmap — real Gmail**.

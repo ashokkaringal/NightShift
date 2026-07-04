@@ -22,7 +22,7 @@ export default function SafetyBanner() {
     >
       <LockOutlinedIcon sx={{ fontSize: 16, color: '#c5221f' }} />
       <Typography sx={{ color: '#c5221f', fontSize: 13, fontWeight: 500 }}>
-        NightShift drafts. It never sends — manager approval is recorded, but v1 has no outbound send path.
+        NightShift drafts. It never sends — phase 1 has no outbound send path; the database enforces manager approval.
       </Typography>
     </Box>
   )

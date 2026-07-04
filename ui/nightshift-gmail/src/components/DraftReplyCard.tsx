@@ -88,8 +88,8 @@ export default function DraftReplyCard({
     <Box
       sx={{
         border: `1px solid ${borders.section}`,
-        borderRadius: 2.5,
-        mt: 3,
+        borderRadius: 1.5,
+        mt: 1.25,
         bgcolor: surfaces.detailCard,
         overflow: 'hidden',
       }}
@@ -98,15 +98,15 @@ export default function DraftReplyCard({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          px: 2.5,
-          py: 1.5,
+          gap: 0.75,
+          px: 1.5,
+          py: 1,
           bgcolor: surfaces.listHeader,
           borderBottom: `1px solid ${borders.section}`,
         }}
       >
-        <ReplyIcon sx={{ fontSize: 18, color: '#1a73e8', transform: 'scaleX(-1)' }} />
-        <Typography sx={{ fontWeight: 600, fontSize: 15, color: '#202124' }}>
+        <ReplyIcon sx={{ fontSize: 17, color: '#1a73e8', transform: 'scaleX(-1)' }} />
+        <Typography sx={{ fontWeight: 600, fontSize: 14.5, color: '#202124' }}>
           NightShift draft reply
         </Typography>
         <Chip
@@ -114,7 +114,7 @@ export default function DraftReplyCard({
           size="small"
           sx={{
             ml: 'auto',
-            height: 24,
+            height: 22,
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: 0.3,
@@ -125,11 +125,12 @@ export default function DraftReplyCard({
         />
       </Box>
 
-      <Box sx={{ p: 2.5 }}>
+      <Box sx={{ p: 1.5 }}>
         {requiresHitl ? (
           <TextField
             multiline
-            minRows={6}
+            minRows={4}
+            maxRows={8}
             fullWidth
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
@@ -137,11 +138,12 @@ export default function DraftReplyCard({
             sx={{
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#fff',
-                borderRadius: 2,
+                borderRadius: 1.5,
                 fontSize: 14,
-                lineHeight: 1.7,
+                lineHeight: 1.55,
                 color: '#3c4043',
                 alignItems: 'flex-start',
+                py: 0.75,
                 '& fieldset': { borderColor: '#dadce0' },
                 '&:hover fieldset': { borderColor: '#bdc1c6' },
                 '&.Mui-focused fieldset': { borderColor: '#1a73e8', borderWidth: 2 },
@@ -153,11 +155,12 @@ export default function DraftReplyCard({
             sx={{
               bgcolor: '#f2faf4',
               border: '1px solid #cfe9d6',
-              borderRadius: 2,
-              p: 2,
+              borderRadius: 1.5,
+              px: 1.25,
+              py: 1,
             }}
           >
-            <Typography sx={{ fontSize: 14, color: '#137333', lineHeight: 1.7 }}>
+            <Typography sx={{ fontSize: 14, color: '#137333', lineHeight: 1.55 }}>
               {draftText || 'No tenant reply drafted — GREEN priority per NightShift policy.'}
             </Typography>
           </Box>
@@ -178,14 +181,14 @@ export default function DraftReplyCard({
             sx={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 1,
-              mt: 2,
-              p: 1.5,
-              borderRadius: 2,
+              gap: 0.75,
+              mt: 1.25,
+              p: 1,
+              borderRadius: 1.5,
               bgcolor: '#e6f4ea',
             }}
           >
-            <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#137333', mt: 0.1 }} />
+            <CheckCircleOutlinedIcon sx={{ fontSize: 16, color: '#137333', mt: 0.1 }} />
             <Box>
               <Typography sx={{ fontSize: 13, color: '#137333', fontWeight: 600 }}>
                 Approved by {detail.approved_by}
@@ -193,28 +196,28 @@ export default function DraftReplyCard({
                   <Box component="span" sx={{ color: '#5f6368', fontWeight: 400 }}> at {detail.approved_at}</Box>
                 ) : null}
               </Typography>
-              <Typography sx={{ mt: 0.5, fontSize: 12, color: '#5f6368' }}>
-                Manager sign-off recorded — outbound send is still blocked in v1 (no send path exists).
+              <Typography sx={{ mt: 0.25, fontSize: 12, color: '#5f6368' }}>
+                Manager sign-off recorded — outbound send remains disabled in phase 1 (no send path exists).
               </Typography>
             </Box>
           </Box>
         ) : statusKey === 'rejected' ? (
-          <Typography sx={{ mt: 2, fontSize: 13, color: '#c5221f', fontWeight: 500 }}>
+          <Typography sx={{ mt: 1.25, fontSize: 13, color: '#c5221f', fontWeight: 500 }}>
             Rejected — this draft will not be sent.
           </Typography>
         ) : statusKey === 'snoozed' ? (
-          <Typography sx={{ mt: 2, fontSize: 13, color: '#5f6368' }}>
+          <Typography sx={{ mt: 1.25, fontSize: 13, color: '#5f6368' }}>
             Snoozed — revisit this draft later.
           </Typography>
         ) : requiresHitl ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.25 }}>
             <LockOutlinedIcon sx={{ fontSize: 15, color: '#80868b' }} />
             <Typography sx={{ fontSize: 12, color: '#80868b' }}>
-              Approving marks the draft ready — outbound send is still blocked in v1.
+              Approving marks the draft ready — outbound send remains disabled in phase 1.
             </Typography>
           </Box>
         ) : (
-          <Typography sx={{ mt: 2, fontSize: 12, color: '#80868b' }}>
+          <Typography sx={{ mt: 1.25, fontSize: 12, color: '#80868b' }}>
             GREEN priority — logged for records only. No tenant reply or manager approval needed.
           </Typography>
         )}

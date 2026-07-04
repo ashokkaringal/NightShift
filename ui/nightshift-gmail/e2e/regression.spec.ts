@@ -21,7 +21,7 @@ test.describe('NightShift UI regressions', () => {
     await expect(page.getByText('APPROVED', { exact: true })).toBeVisible()
     await expect(page.getByText('NO REPLY', { exact: true })).not.toBeVisible()
     await expect(
-      page.getByText('Manager sign-off recorded — outbound send is still blocked in v1'),
+      page.getByText('Manager sign-off recorded — outbound send remains disabled in phase 1'),
     ).toBeVisible()
   })
 

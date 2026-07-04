@@ -68,7 +68,7 @@ response_agent = _DelegatedAgent(
 root_agent = SequentialAgent(
     name="NightShiftSupervisor",
     description=(
-        "NightShift drafts. It never sends — because the database won't let it. "
+        "NightShift drafts. It never sends — phase 1 has no outbound send path; the database enforces manager approval. "
         "Supervisor routes Ingestion → Triage → Response."
     ),
     sub_agents=[ingestion_agent, triage_agent, response_agent],

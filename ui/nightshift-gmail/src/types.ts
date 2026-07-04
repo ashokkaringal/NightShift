@@ -24,6 +24,12 @@ export interface InboxItem {
   error_detail?: string | null
 }
 
+export interface AttachmentDetail {
+  filename: string
+  text: string
+  kind: string
+}
+
 export interface InboxDetail extends InboxItem {
   draft_text?: string | null
   summary?: string | null
@@ -33,6 +39,8 @@ export interface InboxDetail extends InboxItem {
   manager_name?: string | null
   property_label?: string | null
   raw_text?: string | null
+  body_text?: string | null
+  attachments?: AttachmentDetail[]
   received_at?: string | null
   requires_hitl?: boolean
 }

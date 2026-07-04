@@ -1,6 +1,6 @@
 # NightShift
 
-**NightShift drafts. It never sends. Not because the prompt says so — because the database won't let it.**
+**NightShift drafts. It never sends. Not because the prompt says so — because phase 1 has no outbound send path, and the database enforces human approval.**
 
 Overnight property-management agent for the Google 5-Day AI Agents Intensive (Vibe Coding) capstone. Ingests mock MCP sources, classifies urgency, drafts replies to a staging DB — human approval required before any send path.
 
@@ -10,9 +10,15 @@ Property managers wake up to overnight email, HOA notices, tenant reports, and v
 
 ## Solution overview
 
-NightShift runs a three-agent ADK graph overnight: **IngestionAgent** pulls mock MCP sources, **TriageAgent** classifies urgency (RED / YELLOW / GREEN) with deterministic memory lookup, and **ResponseAgent** drafts replies to SQLite in `staged` status only. A Gmail-style UI lets the manager Approve / Reject / Snooze — but v1 has **no outbound send path**.
+NightShift runs a three-agent ADK graph overnight: **IngestionAgent** pulls mock MCP sources, **TriageAgent** classifies urgency (RED / YELLOW / GREEN) with deterministic memory lookup, and **ResponseAgent** drafts replies to SQLite in `staged` status only. A Gmail-style UI lets the manager Approve / Reject / Snooze — but phase 1 has **no outbound send path**.
 
-> **Mock data only:** All inbound mail comes from `mcp/fixtures/` (JSON + invoice text files). There is no live Gmail, HOA portal, or vendor API in v1.
+> **Phase 1 mock data:** All inbound mail comes from `mcp/fixtures/` (JSON + PDF attachments). There is no live Gmail, HOA portal, or vendor API in phase 1. The read-only MCP layer returns shared `RawItem` objects (`models/core.py`) so a **Gmail read-only backend can be swapped in during phase 2** without changing the ADK graph, triage, drafting, or HITL UI.
+
+One-time after clone (PDF attachment fixtures):
+
+```bash
+python scripts/generate_pdf_fixtures.py
+```
 
 ## Quick start
 
@@ -73,7 +79,7 @@ E2E uses dedicated ports `:8002` / `:5174` and `ui_e2e.db` — separate from dev
 |-------|------|------|
 | ADK graph | `agents/adk/graph.py` | `root_agent` — SequentialAgent with 3 sub-agents |
 | Supervisor | `agents/supervisor.py` | Plain Python routing + per-item failure isolation |
-| MCP | `mcp/server.py`, `mcp/loaders.py` | Read-only mock inbox / HOA / invoices |
+| MCP | `mcp/server.py`, `mcp/loaders.py` | Read-only mock inbox / HOA / invoices (+ PDF text extraction) |
 | Sandbox tools | `agents/triage/tools/` | Invoice audit + lease cross-reference |
 | Contracts | `models/core.py` | `RawItem`, `ClassifiedItem`, `Draft` |
 | HITL | `db/models.py`, `db/fsm.py` | CHECK constraint + FSM on update |
@@ -84,6 +90,37 @@ See [`mcp/README.md`](mcp/README.md) for MCP endpoint contracts.
 ![NightShift architecture](docs/architecture.png)
 
 Source SVG: [`docs/architecture.svg`](docs/architecture.svg)
+
+**Swap-in point:** only MCP loaders change between phase 1 (fixtures) and phase 2 (e.g. Gmail read-only). Ingestion → Triage → Response → SQLite HITL stays the same.
+
+## Demo script
+
+Step-by-step capstone recording guide (hard case + PDF attachment + HITL): [`docs/demo_script.md`](docs/demo_script.md)
+
+### PDF attachments (phase 1)
+
+| Fixture | Story |
+|---------|--------|
+| `email-007` | Body says “by Friday”; PDF notice contains full date (`June 27 2026`) |
+| `email-009` | Body has **no deadline**; stop-work PDF contains `Wednesday July 9 2026` only |
+
+The UI detail pane shows **message body** and a separate **Attachments** section (extracted PDF text + **Download** for the source file). Triage and drafting consume merged `raw_text`; `extract_deadline()` prefers full PDF dates over weekday-only hints.
+
+## Phase 2 roadmap — real Gmail (read-only)
+
+Planned post-capstone extension — **not required for phase 1 submission**:
+
+| Piece | Plan |
+|-------|------|
+| **Scope** | `gmail.readonly` only — no `gmail.send`; HITL + DB still block outbound mail |
+| **Swap-in** | Replace `read_inbox` implementation in `mcp/loaders.py` (or add `mcp/gmail_loader.py`) |
+| **Contract** | Same `RawItem` fields — agents, memory, security, UI unchanged |
+| **Attachments** | Gmail API fetch → existing `mcp/pdf_parser.py` |
+| **Tenant map** | Extend `memory/data/` with `From:` address → `tenant_id` |
+| **Toggle** | Planned env: `INBOX_SOURCE=fixtures` (default) \| `gmail` |
+| **OAuth** | Dedicated test Gmail account; tokens in `.env` (never committed) |
+
+Phase 1 keeps curated fixtures for reproducible eval, E2E tests, and demo video. Phase 2 proves the architecture slide: *fixtures today, Gmail tomorrow, same pipeline.*
 
 ## Observability (OpenTelemetry)
 
@@ -109,7 +146,7 @@ OTEL_USE_MEMORY=0 OTEL_EXPORTER_ENDPOINT=http://localhost:4317 python main.py ru
 | **Blue/Green** | `security/output_validation.py` | Catches cross-tenant emails in drafts |
 | **Structural** | `db/fsm.py`, `policy/check_no_send.py` | HITL FSM — no auto-send even if LLM is manipulated |
 
-Threat model summary: compromised MCP can corrupt **input**, not send mail; manipulated drafts still require manager approval; v1 does not solve stolen manager credentials.
+Threat model summary: compromised MCP can corrupt **input**, not send mail; manipulated drafts still require manager approval; phase 1 does not solve stolen manager credentials.
 
 ## Pre-submit checks
 
@@ -194,8 +231,9 @@ curl http://localhost:8080/health
 ## Scaling notes (TDD §2.6)
 
 - **Concurrency:** `SupervisorNode` processes items with `ThreadPoolExecutor` (default 5 workers when stubs are on; set `GEMINI_CONCURRENCY=1` for free-tier Gemini).
-- **Memory:** v1 uses JSON files under `memory/data/`; production would move to a shared store with nightly consolidation only.
-- **MCP swap-in:** Replace `mcp/loaders.py` backends without touching triage/response agents.
+- **Memory:** Phase 1 uses JSON files under `memory/data/`; production would move to a shared store with nightly consolidation only.
+- **MCP swap-in:** Replace `mcp/loaders.py` backends without touching triage/response agents. **Phase 2:** Gmail read-only behind `read_inbox` (see roadmap above).
+- **PDF ingestion:** Machine-readable PDFs in `mcp/fixtures/invoices/*.pdf` and email attachments are extracted to `RawItem.raw_text` via `mcp/pdf_parser.py` (no OCR for scanned PDFs in phase 1). UI serves fixture PDFs via `GET /attachments/{raw_item_id}/{filename}`.
 - **Deploy:** Optional Cloud Run — build from `docker/Dockerfile`, inject `GEMINI_API_KEY` and `MCP_BASE_URL` as env vars.
 
 ## Team docs
