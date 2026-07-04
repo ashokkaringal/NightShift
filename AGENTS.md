@@ -8,6 +8,7 @@ NightShift drafts. It never sends — because the database won't let it.
 - **HITL:** every outbound draft starts as `staged`; only manager action transitions to `approved`.
 - **MCP tools are read-only** in v1 — no send/write tools.
 - **Never commit** API keys, bearer tokens, or tenant PII in logs or traces.
+- **Red/Blue/Green:** scan inbound content (`security/red_team.py`); validate draft output (`security/output_validation.py`); PII redaction in OTel (`observability/redaction.py`).
 
 ## Spec-driven development (course Day 5)
 
@@ -29,4 +30,5 @@ python main.py --dry-run
 uvicorn mcp.server:app --reload --port 8000
 pytest tests/ -v
 python policy/check_no_send.py
+bash scripts/pre_submit.sh
 ```

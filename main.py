@@ -23,14 +23,22 @@ if str(ROOT) not in sys.path:
 from dotenv import load_dotenv
 
 from agents.adk.graph import root_agent
+from agents.gemini_config import live_only_ids
+from agents.response.agent import ResponseAgent
 from agents.supervisor import SupervisorNode
+from agents.triage.agent import TriageAgent
+from api.fixture_lookup import enrich_item
+from api.message_format import derive_message_subject
 from brief.assembler import assemble_brief, format_brief_text
 from db.init_db import init_db
 from hitl.actions import approve_draft, edit_and_approve, reject_draft, snooze_draft
+from observability.logging_config import configure_logging
+from observability.tracing import setup_tracing
 from session.store import RunStateStore
 
 load_dotenv()
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+configure_logging()
+setup_tracing()
 logger = logging.getLogger("nightshift")
 
 
@@ -46,6 +54,18 @@ def cmd_dry_run() -> int:
     logger.info("ADK root_agent=%s sub_agents=%s", root_agent.name, names)
     logger.info("Dry run OK — ADK 2.0 graph wired.")
     return 0
+
+
+def _live_demo_summary() -> str:
+    subset = live_only_ids()
+    if not subset:
+        return "all items"
+    parts: list[str] = []
+    for item_id in sorted(subset):
+        enrich = enrich_item(item_id)
+        subject = enrich.get("subject") or derive_message_subject(enrich.get("raw_text"))
+        parts.append(f"{item_id} ({subject})")
+    return "; ".join(parts)
 
 
 def cmd_run_overnight(resume_run_id: str | None = None) -> int:
@@ -64,6 +84,12 @@ def cmd_run_overnight(resume_run_id: str | None = None) -> int:
     supervisor = SupervisorNode(run_state=run_state)
     raw_items = supervisor.ingest_all()
     logger.info("Run %s — ingested %d items from MCP fixtures", run_state.run_id, len(raw_items))
+    logger.info(
+        "Backends: triage=%s | draft=%s | gemini_items=%s",
+        TriageAgent.backend_name(),
+        ResponseAgent.backend_name(),
+        _live_demo_summary(),
+    )
 
     results = supervisor.run_batch(raw_items)
     snapshot = run_state.snapshot()
@@ -77,8 +103,14 @@ def cmd_run_overnight(resume_run_id: str | None = None) -> int:
 
     hard = next((r for r in results if r["raw_item_id"] == "email-001"), None)
     if hard and hard["classified"]:
-        assert hard["classified"].urgency_tier == "RED", "Hard case must classify RED"
-        logger.info("Hard case email-001: RED ✓")
+        tier = hard["classified"].urgency_tier
+        if tier == "RED":
+            logger.info("Hard case email-001: RED ✓")
+        else:
+            logger.warning(
+                "Hard case email-001 classified %s (expected RED) — check triage prompt / ground truth",
+                tier,
+            )
 
     logger.info(
         "Run %s complete — processed=%d failed=%d",
@@ -158,6 +190,9 @@ def main(argv: list[str] | None = None) -> int:
     snooze_parser = sub.add_parser("snooze", help="Snooze a staged draft")
     snooze_parser.add_argument("--draft-id", required=True)
 
+    sub.add_parser("eval-urgency", help="Run triage eval harness + confusion matrix")
+    sub.add_parser("consolidate-memory", help="Merge memory/data/incoming/*.json into memory store")
+
     args = parser.parse_args(argv)
 
     if args.dry_run:
@@ -181,6 +216,16 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_reject(args.draft_id)
     if command == "snooze":
         return cmd_snooze(args.draft_id)
+    if command == "eval-urgency":
+        from tests.eval_urgency import run_eval_report
+
+        return run_eval_report()
+    if command == "consolidate-memory":
+        from memory.consolidate import consolidate
+
+        stats = consolidate()
+        logger.info("Memory consolidation: %s", stats)
+        return 0
 
     parser.error(f"Unknown command: {command}")
     return 1

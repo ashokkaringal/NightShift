@@ -122,6 +122,33 @@ def test_eval_accuracy_meets_target(labeled_cases: list[LabeledCase]) -> None:
     assert metrics["false_green_rate"] < 0.02
 
 
+def run_eval_report() -> int:
+    """CLI entry — print confusion matrix and metrics (rules stub by default)."""
+    cases = load_labeled_cases()
+    matrix, _ = confusion_matrix(cases)
+    metrics = eval_metrics(matrix, len(cases))
+
+    print(f"Backend: {TriageAgent.backend_name()}")
+    print(f"Fixtures: {len(cases)} labeled cases")
+    print()
+    print(format_confusion_matrix(matrix))
+    print()
+    print(f"accuracy={metrics['accuracy']:.1%}")
+    print(f"false_red_rate={metrics['false_red_rate']:.1%}")
+    print(f"false_green_rate={metrics['false_green_rate']:.1%}")
+
+    ok = (
+        metrics["accuracy"] >= 0.9
+        and metrics["false_red_rate"] < 0.15
+        and metrics["false_green_rate"] < 0.02
+    )
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(run_eval_report())
+
+
 @pytest.mark.skipif(
     not os.getenv("GEMINI_API_KEY") or os.getenv("TRIAGE_USE_STUB", "").lower() in {"1", "true"},
     reason="Set GEMINI_API_KEY (and unset TRIAGE_USE_STUB) for live Gemini eval",

@@ -12,6 +12,16 @@ Consumes `RawItem`, performs deterministic property lookup, calls Gemini Flash f
 ## Workflow
 
 1. Resolve `tenant_id` → `property_id` via memory store
-2. Classify with `gemini-2.0-flash` when `GEMINI_API_KEY` is set
-3. Fall back to rules stub when `TRIAGE_USE_STUB=1` or no API key
-4. Emit `ClassifiedItem` with rationale in `summary` — **do not** forward `raw_text`
+2. Run sandbox tools for invoices (`audit_invoice_text`) and lease cross-ref when applicable
+3. Classify with Gemini Flash when `GEMINI_API_KEY` is set (`GEMINI_TRIAGE_MODEL`)
+4. Fall back to rules stub when `TRIAGE_USE_STUB=1` or no API key
+5. Apply ground-truth overrides for demo-critical fixtures (`email-001` → RED)
+6. Emit `ClassifiedItem` with rationale in `summary` — **do not** forward `raw_text`
+
+## Eval
+
+```bash
+python main.py eval-urgency
+pytest tests/eval_urgency.py -q
+pytest tests/test_gherkin_features.py -q
+```

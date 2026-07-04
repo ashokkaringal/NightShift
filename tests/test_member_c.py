@@ -1,4 +1,4 @@
-"""Member C tests — HITL actions, morning brief, failed items."""
+"""Member C tests — HITL actions, morning brief, failed items, ResponseAgent safety."""
 
 from __future__ import annotations
 
@@ -6,9 +6,12 @@ from datetime import datetime, timezone
 
 import pytest
 
+from agents.response.agent import GREEN_NO_REPLY, ResponseAgent, build_draft_text
 from brief.assembler import assemble_brief, format_brief_text
 from db.engine import SessionLocal
 from db.models import DraftRow, FailedItemRow, OvernightRunRow
+from hitl.actions import approve_draft, edit_and_approve, reject_draft, snooze_draft
+from models.core import ClassifiedItem
 
 
 def _clear_brief_tables(session) -> None:
@@ -16,7 +19,88 @@ def _clear_brief_tables(session) -> None:
     session.query(DraftRow).delete()
     session.query(OvernightRunRow).delete()
     session.commit()
-from hitl.actions import approve_draft, reject_draft, snooze_draft
+
+
+def _classified(
+    *,
+    item_id: str = "email-001",
+    tier: str = "RED",
+    property_id: str = "property-A",
+    summary: str = "RED – water stain | Reasoning: structural",
+) -> ClassifiedItem:
+    return ClassifiedItem(
+        id=f"classified-{item_id}",
+        raw_item_id=item_id,
+        urgency_tier=tier,  # type: ignore[arg-type]
+        property_id=property_id,
+        summary=summary,
+        classified_at=datetime.now(timezone.utc),
+    )
+
+
+def test_response_agent_persists_staged_only() -> None:
+    session = SessionLocal()
+    try:
+        _clear_brief_tables(session)
+        draft = ResponseAgent().run(_classified(), session)
+        assert draft.status == "staged"
+        assert draft.approved_by is None
+        assert draft.approved_at is None
+
+        row = session.get(DraftRow, draft.id)
+        assert row is not None
+        assert row.status == "staged"
+        assert row.approved_by is None
+    finally:
+        session.close()
+
+
+def test_green_items_have_no_outbound_draft_and_stay_staged() -> None:
+    classified = _classified(
+        item_id="email-002",
+        tier="GREEN",
+        property_id="property-B",
+        summary="GREEN – Lightbulb | Reasoning: routine",
+    )
+    text, _ = build_draft_text(classified)
+    assert GREEN_NO_REPLY in text
+
+    session = SessionLocal()
+    try:
+        _clear_brief_tables(session)
+        draft = ResponseAgent().run(classified, session)
+        assert draft.status == "staged"
+        assert draft.draft_text == GREEN_NO_REPLY
+    finally:
+        session.close()
+
+
+def test_edit_and_approve_updates_text_and_metadata() -> None:
+    session = SessionLocal()
+    try:
+        _clear_brief_tables(session)
+        _seed_draft(
+            session,
+            draft_id="draft-edit-approve",
+            raw_item_id="email-006",
+            tier="YELLOW",
+            summary="Faucet follow-up",
+            text="Original draft text.",
+        )
+        draft = edit_and_approve(
+            "draft-edit-approve",
+            "Jane Doe",
+            "Updated draft after manager edit.",
+            session=session,
+        )
+        assert draft.status == "approved"
+        assert draft.approved_by == "Jane Doe"
+        assert draft.approved_at is not None
+        assert draft.draft_text == "Updated draft after manager edit."
+    finally:
+        session.close()
+
+
 
 
 def _seed_run(session, run_id: str = "run-test-001") -> OvernightRunRow:

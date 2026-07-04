@@ -10,12 +10,15 @@ from typing import Literal
 
 from pydantic import BaseModel, ValidationError
 
+from agents.gemini_client import generate_content, model_candidates
+from agents.gemini_config import has_api_key, in_live_subset
 from agents.triage.prompts import CLASSIFICATION_SYSTEM
 
 logger = logging.getLogger(__name__)
 
 UrgencyTier = Literal["RED", "YELLOW", "GREEN"]
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_TRIAGE_MODEL", "gemini-2.0-flash")
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_TRIAGE_MODEL", "gemini-2.5-flash")
+TRIAGE_MODEL_CANDIDATES = model_candidates("GEMINI_TRIAGE_MODEL", "gemini-2.5-flash,gemini-3.5-flash")
 
 
 class ClassificationResult(BaseModel):
@@ -24,10 +27,12 @@ class ClassificationResult(BaseModel):
     summary: str
 
 
-def use_gemini_classifier() -> bool:
+def use_gemini_classifier(raw_item_id: str | None = None) -> bool:
     if os.getenv("TRIAGE_USE_STUB", "").lower() in {"1", "true", "yes"}:
         return False
-    return bool(os.getenv("GEMINI_API_KEY"))
+    if not has_api_key():
+        return False
+    return in_live_subset(raw_item_id)
 
 
 def classify_with_rules(raw_text: str) -> ClassificationResult:
@@ -103,29 +108,20 @@ def _parse_json_response(text: str) -> ClassificationResult:
 
 
 def classify_with_gemini(raw_text: str, property_id: str) -> ClassificationResult:
-    from google import genai
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set")
-
-    client = genai.Client(api_key=api_key)
     user_prompt = (
         f"Property ID: {property_id}\n\n"
         f"Inbound message:\n{raw_text}\n\n"
         "Classify urgency and explain briefly."
     )
 
-    response = client.models.generate_content(
-        model=DEFAULT_GEMINI_MODEL,
+    result_text, model_used = generate_content(
+        models=TRIAGE_MODEL_CANDIDATES,
         contents=user_prompt,
-        config={
-            "system_instruction": CLASSIFICATION_SYSTEM,
-            "response_mime_type": "application/json",
-        },
+        system_instruction=CLASSIFICATION_SYSTEM,
+        response_mime_type="application/json",
     )
+    logger.info("Triage classified via %s", model_used)
 
-    result_text = response.text or ""
     try:
         return _parse_json_response(result_text)
     except (json.JSONDecodeError, ValidationError) as exc:
@@ -133,8 +129,13 @@ def classify_with_gemini(raw_text: str, property_id: str) -> ClassificationResul
         return classify_with_rules(raw_text)
 
 
-def classify_urgency(raw_text: str, property_id: str) -> ClassificationResult:
-    if use_gemini_classifier():
+def classify_urgency(
+    raw_text: str,
+    property_id: str,
+    *,
+    raw_item_id: str | None = None,
+) -> ClassificationResult:
+    if use_gemini_classifier(raw_item_id):
         try:
             return classify_with_gemini(raw_text, property_id)
         except Exception as exc:  # noqa: BLE001 — bounded fallback

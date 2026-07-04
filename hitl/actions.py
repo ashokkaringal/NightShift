@@ -100,6 +100,28 @@ def reject_draft(
             db.close()
 
 
+def save_draft_text(
+    draft_id: str,
+    draft_text: str,
+    *,
+    session: Session | None = None,
+) -> Draft:
+    own = session is None
+    db = session or SessionLocal()
+    try:
+        row = _get_draft(db, draft_id)
+        row.draft_text = draft_text.strip()
+        db.commit()
+        db.refresh(row)
+        return _to_model(row)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        if own:
+            db.close()
+
+
 def snooze_draft(
     draft_id: str,
     *,

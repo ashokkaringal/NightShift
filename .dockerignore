@@ -1,0 +1,13 @@
+.venv
+__pycache__
+*.pyc
+.git
+.pytest_cache
+nightshift.db
+ui_e2e.db
+*.db
+ui/nightshift-gmail/node_modules
+ui/nightshift-gmail/dist
+ui/nightshift-gmail/test-results
+.env
+*.pdf
