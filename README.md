@@ -27,6 +27,9 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # add GEMINI_API_KEY when using LLM (Day 2+)
 
+# Optional deterministic judge/reviewer mode, even if a key is present:
+# set TRIAGE_USE_STUB=1 and DRAFT_USE_STUB=1 in .env
+
 python db/init_db.py
 python main.py --dry-run          # verify ADK 2.0 graph
 python main.py run-overnight      # full stub pipeline

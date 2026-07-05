@@ -250,6 +250,9 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # optional: GEMINI_API_KEY for live subset
 
+# Optional deterministic reviewer mode, even if a Gemini key is present:
+# set TRIAGE_USE_STUB=1 and DRAFT_USE_STUB=1 in .env
+
 python scripts/generate_pdf_fixtures.py
 bash scripts/rebuild_dev_db.sh
 
