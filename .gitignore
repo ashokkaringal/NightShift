@@ -12,3 +12,6 @@ nightshift.db
 *.db
 .DS_Store
 out/
+
+# Local-only tooling (capstone video recording — never push)
+_local/
