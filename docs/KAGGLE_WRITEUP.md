@@ -99,9 +99,9 @@ Optional Docker image exposes `/health` for deploy evidence (`docker/Dockerfile`
 
 ---
 
-## Demo fixtures (four curated beats)
+## Demo fixtures (five curated beats)
 
-NightShift ships four inbox fixtures tuned for the capstone demo and live-Gemini subset (`GEMINI_LIVE_ONLY_IDS=email-001,email-006,email-007,email-009`). Together they cover **hard triage judgment**, **YELLOW-tier HITL**, and **two PDF deadline patterns**.
+NightShift ships five inbox fixtures tuned for the capstone demo; four are in the live-Gemini subset (`GEMINI_LIVE_ONLY_IDS=email-001,email-006,email-007,email-009`) and `email-010` covers SPAM routing. Together they cover **hard triage judgment**, **YELLOW-tier HITL**, **two PDF deadline patterns**, and **spam filtering**.
 
 ### `email-001` — ambiguous water stain → RED
 
@@ -274,4 +274,4 @@ Built for the Google & Kaggle 5-Day AI Agents Intensive (Vibe Coding), Agents fo
 
 ---
 
-*Word count: ~1,950 (within 2,500 limit). Paste into Kaggle Writeup field; embed `docs/architecture.png` and confusion matrix screenshot; link YouTube video and public repo before submitting.*
+*Word count: ~2,300 (within 2,500 limit). Paste into Kaggle Writeup field; embed `docs/architecture.png` and confusion matrix screenshot; link YouTube video and public repo before submitting. Omit this footer line in the Kaggle editor.*
