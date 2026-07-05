@@ -3,6 +3,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined'
 import DraftsOutlinedIcon from '@mui/icons-material/DraftsOutlined'
 import InboxIcon from '@mui/icons-material/Inbox'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
+import ReportGmailerrorredIcon from '@mui/icons-material/ReportGmailerrorred'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import BlockIcon from '@mui/icons-material/Block'
@@ -32,6 +33,7 @@ const NAV: NavItem[] = [
   { key: 'staged', label: 'Staged drafts', countKey: 'staged', icon: <DraftsOutlinedIcon fontSize="small" /> },
   { key: 'urgent', label: 'Urgent (RED)', countKey: 'urgent_red', icon: <PriorityHighIcon fontSize="small" />, tone: 'red' },
   { key: 'yellow', label: 'Follow-up (YELLOW)', countKey: 'yellow', icon: <WarningAmberIcon fontSize="small" />, tone: 'yellow' },
+  { key: 'spam', label: 'Spam', countKey: 'spam', icon: <ReportGmailerrorredIcon fontSize="small" /> },
   { key: 'approved', label: 'Approved', countKey: 'approved', icon: <CheckCircleOutlineIcon fontSize="small" /> },
   { key: 'snoozed', label: 'Snoozed', countKey: 'snoozed', icon: <ScheduleIcon fontSize="small" /> },
   { key: 'rejected', label: 'Rejected', countKey: 'rejected', icon: <BlockIcon fontSize="small" /> },
@@ -47,16 +49,20 @@ interface SidebarProps {
   counts: SidebarCounts
   runs: OvernightRunOption[]
   runId?: string
+  unreadSpam?: number
   onFilterChange: (f: InboxFilter) => void
   onRunChange: (runId: string) => void
   onRefresh: () => void
 }
+
+const SPAM_UNREAD_COLOR = '#1a73e8'
 
 export default function Sidebar({
   filter,
   counts,
   runs,
   runId,
+  unreadSpam = 0,
   onFilterChange,
   onRunChange,
   onRefresh,
@@ -103,8 +109,27 @@ export default function Sidebar({
         {NAV.map((item) => {
           const count = item.countKey ? counts[item.countKey] : 0
           const active = filter === item.key
+          const isSpam = item.key === 'spam'
+          const spamUnread = isSpam && unreadSpam > 0
           const toneColor = item.tone ? TONE_COLOR[item.tone] : '#202124'
-          const iconColor = active ? '#174ea6' : item.tone ? toneColor : '#5f6368'
+          const iconColor = isSpam
+            ? spamUnread
+              ? SPAM_UNREAD_COLOR
+              : '#5f6368'
+            : active
+              ? '#174ea6'
+              : item.tone
+                ? toneColor
+                : '#5f6368'
+          const labelColor = isSpam
+            ? spamUnread
+              ? SPAM_UNREAD_COLOR
+              : '#202124'
+            : item.tone
+              ? toneColor
+              : active
+                ? '#174ea6'
+                : '#202124'
           return (
             <ListItemButton
               key={item.key}
@@ -128,8 +153,8 @@ export default function Sidebar({
                     sx: {
                       fontSize: 12,
                       lineHeight: 1.25,
-                      fontWeight: active ? 700 : 500,
-                      color: item.tone ? toneColor : active ? '#174ea6' : '#202124',
+                      fontWeight: isSpam ? (spamUnread ? 700 : 500) : active ? 700 : 500,
+                      color: labelColor,
                     },
                   },
                 }}
@@ -137,14 +162,24 @@ export default function Sidebar({
               <Box
                 sx={{
                   fontSize: 11,
-                  fontWeight: active || count > 0 ? 700 : 400,
-                  color: item.tone && count > 0 ? toneColor : '#5f6368',
+                  fontWeight: isSpam
+                    ? spamUnread
+                      ? 700
+                      : 400
+                    : active || count > 0
+                      ? 700
+                      : 400,
+                  color: spamUnread
+                    ? SPAM_UNREAD_COLOR
+                    : item.tone && count > 0
+                      ? toneColor
+                      : '#5f6368',
                   minWidth: 14,
                   textAlign: 'right',
                   flexShrink: 0,
                 }}
               >
-                {count}
+                {item.key === 'spam' && unreadSpam > 0 ? unreadSpam : count}
               </Box>
             </ListItemButton>
           )

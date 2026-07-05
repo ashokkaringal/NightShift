@@ -37,7 +37,7 @@ curl -H "Authorization: Bearer dev-token-placeholder" http://localhost:8000/read
 
 | Path | Contents |
 |------|----------|
-| `fixtures/inbox.json` | 8 tenant emails including hard case `email-001` (water stain); `email-007` has a PDF attachment |
+| `fixtures/inbox.json` | 10 tenant emails including hard case `email-001` (water stain); `email-007` / `email-009` PDF attachments; `email-010` spam/phishing |
 | `fixtures/hoa_portal.json` | 3 HOA portal notices (messy typos, inspection dates) |
 | `fixtures/invoices/*.txt` | Vendor invoices — `invoice_001` has intentional total mismatch |
 | `fixtures/invoices/*.pdf` | Machine-readable invoice PDFs (text extracted via `mcp/pdf_parser.py`) |

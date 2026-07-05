@@ -8,7 +8,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 SourceType = Literal["email", "hoa_portal", "invoice"]
-UrgencyTier = Literal["RED", "YELLOW", "GREEN"]
+UrgencyTier = Literal["RED", "YELLOW", "GREEN", "SPAM"]
 DraftStatus = Literal["staged", "approved", "rejected", "snoozed", "ready_to_send"]
 
 
@@ -33,6 +33,7 @@ class Draft(BaseModel):
     id: str
     classified_item_id: str
     draft_text: str
+    draft_text_alt: str | None = None
     status: DraftStatus = "staged"
     approved_by: str | None = None
     approved_at: datetime | None = None

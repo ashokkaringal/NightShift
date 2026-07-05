@@ -18,6 +18,8 @@ _DRAFT_OPTIONAL_COLUMNS = (
     ("raw_item_id", "TEXT"),
     ("urgency_tier", "TEXT"),
     ("summary", "TEXT"),
+    ("read_at", "DATETIME"),
+    ("draft_text_alt", "TEXT"),
 )
 
 

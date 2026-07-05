@@ -3,6 +3,7 @@ export type InboxFilter =
   | 'staged'
   | 'urgent'
   | 'yellow'
+  | 'spam'
   | 'approved'
   | 'snoozed'
   | 'rejected'
@@ -32,6 +33,7 @@ export interface AttachmentDetail {
 
 export interface InboxDetail extends InboxItem {
   draft_text?: string | null
+  draft_text_alt?: string | null
   summary?: string | null
   reasoning?: string | null
   tenant_email?: string | null
@@ -50,6 +52,8 @@ export interface SidebarCounts {
   staged: number
   urgent_red: number
   yellow: number
+  spam: number
+  spam_unread: number
   approved: number
   snoozed: number
   rejected: number

@@ -69,7 +69,7 @@ root_agent = SequentialAgent(
     name="NightShiftSupervisor",
     description=(
         "NightShift drafts. It never sends — phase 1 has no outbound send path; the database enforces manager approval. "
-        "Supervisor routes Ingestion → Triage → Response."
+        "Three named sub-agents for ADK dry-run; runtime orchestration is SupervisorNode in agents/supervisor.py."
     ),
     sub_agents=[ingestion_agent, triage_agent, response_agent],
 )

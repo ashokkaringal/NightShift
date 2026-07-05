@@ -10,7 +10,7 @@ Property managers wake up to overnight email, HOA notices, tenant reports, and v
 
 ## Solution overview
 
-NightShift runs a three-agent ADK graph overnight: **IngestionAgent** pulls mock MCP sources, **TriageAgent** classifies urgency (RED / YELLOW / GREEN) with deterministic memory lookup, and **ResponseAgent** drafts replies to SQLite in `staged` status only. A Gmail-style UI lets the manager Approve / Reject / Snooze — but phase 1 has **no outbound send path**.
+NightShift runs a three-agent ADK graph overnight: **IngestionAgent** pulls mock MCP sources, **TriageAgent** classifies urgency (RED / YELLOW / GREEN / **SPAM**) with deterministic memory lookup, and **ResponseAgent** drafts replies to SQLite in `staged` status only. For RED and YELLOW items, the agent produces **two draft variants** — action-focused (Option A) and empathetic (Option B) — so Maria can pick the tone she prefers before approving. A Gmail-style UI lets the manager Approve / Reject / Snooze — but phase 1 has **no outbound send path**.
 
 > **Phase 1 mock data:** All inbound mail comes from `mcp/fixtures/` (JSON + PDF attachments). There is no live Gmail, HOA portal, or vendor API in phase 1. The read-only MCP layer returns shared `RawItem` objects (`models/core.py`) so a **Gmail read-only backend can be swapped in during phase 2** without changing the ADK graph, triage, drafting, or HITL UI.
 
@@ -65,6 +65,15 @@ cd ui/nightshift-gmail && npm run dev   # http://localhost:5173
 
 The UI reads `DraftRow` + `FailedItemRow` from SQLite and wires Approve / Reject / Snooze to the same `hitl/actions.py` as the CLI.
 
+**UI highlights:**
+
+| Feature | Behavior |
+|---------|----------|
+| **Dual draft picker** | RED/YELLOW items show Option A (action-focused) and Option B (empathetic) stacked; Maria selects one, edits if needed, then Approve saves the chosen text via `edit-approve`. |
+| **Spam folder** | `email-010` (gift-card scam) classifies as **SPAM**; excluded from Inbox; folder highlights dark blue while unread (`read_at` null in DB). |
+| **Sidebar filters** | Inbox, Staged, Urgent (RED), Follow-up (YELLOW), Spam, Approved, Snoozed, Rejected |
+| **PDF attachments** | Detail pane: body + extracted attachment text + Download link |
+
 ### UI regression tests (Playwright)
 
 ```bash
@@ -77,12 +86,12 @@ E2E uses dedicated ports `:8002` / `:5174` and `ui_e2e.db` — separate from dev
 
 | Layer | Path | Role |
 |-------|------|------|
-| ADK graph | `agents/adk/graph.py` | `root_agent` — SequentialAgent with 3 sub-agents |
-| Supervisor | `agents/supervisor.py` | Plain Python routing + per-item failure isolation |
+| ADK graph | `agents/adk/graph.py` | Three named sub-agents (dry-run topology) |
+| Supervisor | `agents/supervisor.py` | **Runtime orchestrator** — calls Ingestion, then Triage + Response per item |
 | MCP | `mcp/server.py`, `mcp/loaders.py` | Read-only mock inbox / HOA / invoices (+ PDF text extraction) |
 | Sandbox tools | `agents/triage/tools/` | Invoice audit + lease cross-reference |
-| Contracts | `models/core.py` | `RawItem`, `ClassifiedItem`, `Draft` |
-| HITL | `db/models.py`, `db/fsm.py` | CHECK constraint + FSM on update |
+| Contracts | `models/core.py` | `RawItem`, `ClassifiedItem`, `Draft` (incl. `draft_text_alt`) |
+| HITL | `db/models.py`, `db/fsm.py` | CHECK constraint + FSM on update; `read_at` for spam unread |
 | Policy | `policy/check_no_send.py` | Blocks `staged → ready_to_send` |
 
 See [`mcp/README.md`](mcp/README.md) for MCP endpoint contracts.
@@ -91,7 +100,18 @@ See [`mcp/README.md`](mcp/README.md) for MCP endpoint contracts.
 
 Source SVG: [`docs/architecture.svg`](docs/architecture.svg)
 
-**Swap-in point:** only MCP loaders change between phase 1 (fixtures) and phase 2 (e.g. Gmail read-only). Ingestion → Triage → Response → SQLite HITL stays the same.
+**Swap-in point:** only MCP loaders change between phase 1 (fixtures) and phase 2 (e.g. Gmail read-only). **SupervisorNode** and the three agents stay the same; IngestionAgent still **calls** MCP read tools and returns `RawItem` objects.
+
+**Runtime vs diagram:** Overnight processing is orchestrated by `SupervisorNode` — it calls Ingestion once, then Triage and Response per item. Agents do not call each other. The ADK `SequentialAgent` declares the three-agent topology for `python main.py --dry-run`. **Memory store** is JSON key/value lookup only (no vector DB in phase 1). **ResponseAgent** writes `draft_text` + optional `draft_text_alt`; at most **one** Gemini call per item (Option A when live; Option B is rules-only empathetic templates).
+
+## Draft variants (RED / YELLOW)
+
+| Option | Label | Source | Gemini? |
+|--------|-------|--------|---------|
+| **A** | Action-focused | Primary draft (`draft_text`) | 0–1 call when `GEMINI_LIVE_ONLY_IDS` matches |
+| **B** | Empathetic | Alternate (`draft_text_alt`) | Never — deterministic rules templates |
+
+GREEN and SPAM items have no tenant reply (single panel, no dual picker). Maria's Approve uses `POST /drafts/{id}/edit-approve` with the selected option's text.
 
 ## Demo script
 

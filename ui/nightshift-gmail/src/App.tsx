@@ -22,13 +22,14 @@ export default function App() {
     counts,
     runs,
     selectedId,
-    setSelectedId,
+    selectItem,
     detail,
     loading,
     detailLoading,
     error,
     refresh,
     hitlAction,
+    unreadSpam,
   } = useInbox()
 
   return (
@@ -51,6 +52,7 @@ export default function App() {
             counts={counts}
             runs={runs}
             runId={runId}
+            unreadSpam={unreadSpam}
             onFilterChange={setFilter}
             onRunChange={(id) => setRunId(id === 'local' ? undefined : id)}
             onRefresh={() => void refresh()}
@@ -59,12 +61,12 @@ export default function App() {
             items={items}
             selectedId={selectedId}
             loading={loading}
-            onSelect={setSelectedId}
+            onSelect={selectItem}
           />
           <MessageDetail
             detail={detail}
             loading={!detail && (loading || detailLoading)}
-            onApprove={(m) => hitlAction('approve', m)}
+            onApprove={(m, text) => hitlAction('approve', m, text)}
             onReject={() => hitlAction('reject')}
             onSnooze={() => hitlAction('snooze')}
             onSaveEdits={(text) => hitlAction('save', text)}

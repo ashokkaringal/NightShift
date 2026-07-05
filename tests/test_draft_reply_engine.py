@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
-from agents.response.agent import build_draft_text
-from agents.response.draft_reply_engine import DraftInput, extract_deadline, generate_draft_reply
+from agents.response.agent import build_draft_text, build_draft_variants
+from agents.response.draft_reply_engine import (
+    DraftInput,
+    extract_deadline,
+    generate_draft_reply,
+    generate_draft_reply_alt,
+)
 from models.core import ClassifiedItem
 from datetime import datetime, timezone
 
@@ -50,6 +55,65 @@ def test_green_returns_no_draft() -> None:
     )
     assert out.status == "NO_DRAFT"
     assert out.body is None
+
+
+def test_alt_variant_differs_from_primary_for_red() -> None:
+    inp = DraftInput(
+        urgency="RED",
+        source_type="tenant",
+        property_display_name="Valencia Condo",
+        issue_subject="No heat in unit 4B",
+    )
+    primary = generate_draft_reply(inp)
+    alt = generate_draft_reply_alt(inp)
+    assert primary.template_id == "red_urgent_v1"
+    assert alt.template_id == "red_urgent_v2_empathetic"
+    assert alt.body and alt.body != primary.body
+    assert "— Maria Santos" in alt.body
+
+
+def test_alt_variant_differs_from_primary_for_yellow() -> None:
+    inp = DraftInput(urgency="YELLOW", source_type="tenant", property_display_name="Haight Cottage")
+    primary = generate_draft_reply(inp)
+    alt = generate_draft_reply_alt(inp)
+    assert alt.template_id == "yellow_ack_v2_empathetic"
+    assert alt.body and alt.body != primary.body
+
+
+def test_alt_variant_green_returns_no_draft() -> None:
+    alt = generate_draft_reply_alt(
+        DraftInput(urgency="GREEN", source_type="tenant", property_display_name="16th Street Fourplex")
+    )
+    assert alt.status == "NO_DRAFT"
+    assert alt.body is None
+
+
+def test_build_draft_variants_returns_two_options_for_red() -> None:
+    classified = ClassifiedItem(
+        id="classified-email-001",
+        raw_item_id="email-001",
+        urgency_tier="RED",
+        property_id="property-A",
+        summary="RED – water stain | Reasoning: structural",
+        classified_at=datetime.now(timezone.utc),
+    )
+    primary, alternate, _tag = build_draft_variants(classified)
+    assert primary
+    assert alternate
+    assert primary != alternate
+
+
+def test_build_draft_variants_no_alternate_for_green() -> None:
+    classified = ClassifiedItem(
+        id="classified-green",
+        raw_item_id="email-002",
+        urgency_tier="GREEN",
+        property_id="property-A",
+        summary="GREEN – lightbulb | Reasoning: minor",
+        classified_at=datetime.now(timezone.utc),
+    )
+    primary, alternate, _tag = build_draft_variants(classified)
+    assert alternate is None
 
 
 def test_email_007_uses_city_template() -> None:

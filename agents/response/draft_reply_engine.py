@@ -104,6 +104,71 @@ def generate_draft_reply(inp: DraftInput) -> DraftOutput:
     )
 
 
+def generate_draft_reply_alt(inp: DraftInput) -> DraftOutput:
+    """Empathetic alternate variant (Option B) — warmer tone, interim help.
+
+    Mirrors the primary decision tree; only wording differs so Maria can pick.
+    """
+    prop = inp.property_display_name or "your property"
+    prop_the = inp.property_display_name or "the property"
+    issue = inp.issue_subject
+    sig = f"— {inp.manager_name}"
+
+    if inp.urgency == "RED":
+        if inp.show_911_banner:
+            body = (
+                _greeting(issue, prop)
+                + "I'm so sorry — a possible gas leak is frightening. Your safety comes "
+                "first: if you haven't already, please leave the unit now, avoid using any "
+                "electrical switches, and call 911 and the gas utility right away.\n\n"
+                "I have emergency maintenance on the way and will stay reachable until you're "
+                "safe and the issue is resolved.\n\n"
+                f"— {inp.manager_name}, Property Management"
+            )
+            return DraftOutput(status="DRAFT", template_id="red_gas_v2_empathetic", body=body)
+
+        if inp.source_type == "city":
+            topic = issue or "city notice"
+            body = (
+                _greeting(issue, prop)
+                + f"Thank you for flagging the {topic.lower()} for {prop_the} — I understand "
+                "how stressful an official notice can feel. I'm personally reviewing the "
+                f"stop-work order today and will coordinate every corrective step needed"
+                f"{_deadline_phrase(inp.deadline)}. I'll keep you updated so nothing catches "
+                "you by surprise.\n\n"
+                f"{sig}"
+            )
+            return DraftOutput(status="DRAFT", template_id="red_city_v2_empathetic", body=body)
+
+        body = (
+            _greeting(issue, prop)
+            + "I'm sorry you're dealing with this — I know it's urgent and I've made it a "
+            "priority. I'm contacting our vendor now and will confirm a visit window within "
+            "the next few hours. If things get worse in the meantime, please reach out and "
+            "we'll arrange interim help.\n\n"
+            f"{sig}"
+        )
+        return DraftOutput(status="DRAFT", template_id="red_urgent_v2_empathetic", body=body)
+
+    if inp.urgency == "YELLOW":
+        body = (
+            _greeting(issue, prop)
+            + "Thank you for letting me know — I appreciate your patience. I've logged this "
+            "and will assign the right vendor to take care of it. You can expect a personal "
+            "update from me within 1–2 business days, and I'm happy to answer any questions "
+            "in the meantime.\n\n"
+            f"{sig}"
+        )
+        return DraftOutput(status="DRAFT", template_id="yellow_ack_v2_empathetic", body=body)
+
+    return DraftOutput(
+        status="NO_DRAFT",
+        template_id=None,
+        body=None,
+        reason="GREEN or unrated — no reply needed",
+    )
+
+
 _MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*"
 _WEEKDAY = r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)"
 _YEAR = r"\d{4}"

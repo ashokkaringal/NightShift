@@ -47,6 +47,10 @@ export function fetchItemDetail(id: string): Promise<InboxDetail> {
   return request(`/items/${encodeURIComponent(id)}`)
 }
 
+export function markSpamRead(id: string): Promise<{ id: string; read_at: string | null }> {
+  return request(`/drafts/${encodeURIComponent(id)}/mark-read`, { method: 'POST' })
+}
+
 export function approveDraft(id: string, manager: string): Promise<unknown> {
   return request(`/drafts/${encodeURIComponent(id)}/approve`, {
     method: 'POST',

@@ -3,9 +3,14 @@
 NightShift supervisor entrypoint.
 
 Data flow (hard case — PRD §1.5 / TDD §2.2.1):
-  IngestionAgent → water-stain RawItem via read_inbox (MCP)
-  TriageAgent    → ClassifiedItem urgency=RED
-  ResponseAgent  → Draft(status=staged) in SQLite
+  SupervisorNode.ingest_all()
+    → IngestionAgent.run() calls MCP read tools → list[RawItem]
+  SupervisorNode.run_batch() — per RawItem:
+    → TriageAgent.run(raw) → ClassifiedItem
+    → ResponseAgent.run(classified) → Draft(status=staged) in SQLite
+
+Agents do not call each other; SupervisorNode orchestrates all handoffs.
+ADK graph in agents/adk/graph.py declares three sub-agents for dry-run only.
 """
 
 from __future__ import annotations

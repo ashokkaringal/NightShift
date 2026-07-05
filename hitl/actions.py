@@ -23,6 +23,7 @@ def _to_model(row: DraftRow) -> Draft:
         id=row.id,
         classified_item_id=row.classified_item_id,
         draft_text=row.draft_text,
+        draft_text_alt=row.draft_text_alt,
         status=row.status,  # type: ignore[arg-type]
         approved_by=row.approved_by,
         approved_at=row.approved_at,

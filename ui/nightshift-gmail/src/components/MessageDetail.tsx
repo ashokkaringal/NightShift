@@ -28,7 +28,7 @@ function senderInitial(detail: InboxDetail): string {
 interface MessageDetailProps {
   detail: InboxDetail | null
   loading: boolean
-  onApprove: (manager: string) => Promise<void>
+  onApprove: (manager: string, text: string) => Promise<void>
   onReject: () => Promise<void>
   onSnooze: () => Promise<void>
   onSaveEdits: (text: string) => Promise<void>

@@ -1,6 +1,8 @@
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked'
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import ReplyIcon from '@mui/icons-material/Reply'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
@@ -13,10 +15,90 @@ import type { InboxDetail } from '../types'
 
 interface DraftReplyCardProps {
   detail: InboxDetail
-  onApprove: (manager: string) => Promise<void>
+  onApprove: (manager: string, text: string) => Promise<void>
   onReject: () => Promise<void>
   onSnooze: () => Promise<void>
   onSaveEdits: (text: string) => Promise<void>
+}
+
+type OptionKey = 'A' | 'B'
+
+const OPTION_META: Record<OptionKey, { title: string; subtitle: string }> = {
+  A: { title: 'Option A — Action-focused', subtitle: 'Direct vendor dispatch and timeline' },
+  B: { title: 'Option B — Empathetic', subtitle: 'Warmer tone with interim support' },
+}
+
+interface DraftOptionPanelProps {
+  optionKey: OptionKey
+  selected: boolean
+  value: string
+  editable: boolean
+  onSelect: () => void
+  onChange: (text: string) => void
+}
+
+function DraftOptionPanel({
+  optionKey,
+  selected,
+  value,
+  editable,
+  onSelect,
+  onChange,
+}: DraftOptionPanelProps) {
+  const meta = OPTION_META[optionKey]
+  return (
+    <Box
+      onClick={selected ? undefined : onSelect}
+      sx={{
+        border: `1px solid ${selected ? '#1a73e8' : '#dadce0'}`,
+        borderLeft: `4px solid ${selected ? '#1a73e8' : '#dadce0'}`,
+        borderRadius: 1.5,
+        bgcolor: selected ? '#f8fbff' : '#fff',
+        p: 1.25,
+        cursor: selected ? 'default' : 'pointer',
+        transition: 'border-color 120ms, background-color 120ms',
+        '&:hover': selected ? undefined : { borderColor: '#bdc1c6', bgcolor: '#fafbfc' },
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+        {selected ? (
+          <RadioButtonCheckedIcon sx={{ fontSize: 18, color: '#1a73e8' }} />
+        ) : (
+          <RadioButtonUncheckedIcon sx={{ fontSize: 18, color: '#80868b' }} />
+        )}
+        <Box>
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: selected ? '#1a73e8' : '#3c4043' }}>
+            {meta.title}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: '#80868b' }}>{meta.subtitle}</Typography>
+        </Box>
+      </Box>
+      <TextField
+        multiline
+        minRows={4}
+        maxRows={9}
+        fullWidth
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={selected ? undefined : onSelect}
+        disabled={!editable}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            bgcolor: '#fff',
+            borderRadius: 1.5,
+            fontSize: 14,
+            lineHeight: 1.55,
+            color: '#3c4043',
+            alignItems: 'flex-start',
+            py: 0.75,
+            '& fieldset': { borderColor: '#e3e6ea' },
+            '&:hover fieldset': { borderColor: '#bdc1c6' },
+            '&.Mui-focused fieldset': { borderColor: '#1a73e8', borderWidth: 2 },
+          },
+        }}
+      />
+    </Box>
+  )
 }
 
 export default function DraftReplyCard({
@@ -27,12 +109,16 @@ export default function DraftReplyCard({
   onSaveEdits,
 }: DraftReplyCardProps) {
   const [draftText, setDraftText] = useState(detail.draft_text ?? '')
+  const [altText, setAltText] = useState(detail.draft_text_alt ?? '')
+  const [selectedOption, setSelectedOption] = useState<OptionKey>('A')
   const [acting, setActing] = useState(false)
   const manager = detail.manager_name ?? 'Maria Santos'
 
   useEffect(() => {
     setDraftText(detail.draft_text ?? '')
-  }, [detail.id, detail.draft_text])
+    setAltText(detail.draft_text_alt ?? '')
+    setSelectedOption('A')
+  }, [detail.id, detail.draft_text, detail.draft_text_alt])
 
   if (detail.kind === 'failed') {
     return (
@@ -74,6 +160,9 @@ export default function DraftReplyCard({
         : 'no_reply'
   const chip = statusChipStyles[chipKey] ?? statusChipStyles.staged
   const canAct = requiresHitl && (statusKey === 'staged' || statusKey === 'snoozed')
+  const hasAlt = Boolean(detail.draft_text_alt)
+  const dualMode = canAct && hasAlt
+  const selectedText = selectedOption === 'A' ? draftText : altText
 
   const runAction = async (fn: () => Promise<void>) => {
     setActing(true)
@@ -126,7 +215,31 @@ export default function DraftReplyCard({
       </Box>
 
       <Box sx={{ p: 1.5 }}>
-        {requiresHitl ? (
+        {dualMode ? (
+          <>
+            <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#5f6368', mb: 1 }}>
+              Choose a response — edit the selected option, then approve
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+              <DraftOptionPanel
+                optionKey="A"
+                selected={selectedOption === 'A'}
+                value={draftText}
+                editable={!acting && selectedOption === 'A'}
+                onSelect={() => setSelectedOption('A')}
+                onChange={setDraftText}
+              />
+              <DraftOptionPanel
+                optionKey="B"
+                selected={selectedOption === 'B'}
+                value={altText}
+                editable={!acting && selectedOption === 'B'}
+                onSelect={() => setSelectedOption('B')}
+                onChange={setAltText}
+              />
+            </Box>
+          </>
+        ) : requiresHitl ? (
           <TextField
             multiline
             minRows={4}
@@ -169,10 +282,10 @@ export default function DraftReplyCard({
         {canAct && (
           <DraftActions
             disabled={acting}
-            onApprove={() => runAction(() => onApprove(manager))}
+            onApprove={() => runAction(() => onApprove(manager, selectedText))}
             onReject={() => runAction(onReject)}
             onSnooze={() => runAction(onSnooze)}
-            onSaveEdits={() => runAction(() => onSaveEdits(draftText))}
+            onSaveEdits={() => runAction(() => onSaveEdits(selectedText))}
           />
         )}
 
@@ -213,12 +326,16 @@ export default function DraftReplyCard({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.25 }}>
             <LockOutlinedIcon sx={{ fontSize: 15, color: '#80868b' }} />
             <Typography sx={{ fontSize: 12, color: '#80868b' }}>
-              Approving marks the draft ready — outbound send remains disabled in phase 1.
+              {dualMode
+                ? 'Approving saves the selected option — outbound send remains disabled in phase 1.'
+                : 'Approving marks the draft ready — outbound send remains disabled in phase 1.'}
             </Typography>
           </Box>
         ) : (
           <Typography sx={{ mt: 1.25, fontSize: 12, color: '#80868b' }}>
-            GREEN priority — logged for records only. No tenant reply or manager approval needed.
+            {detail.urgency_tier === 'SPAM'
+              ? 'Flagged as spam — filtered out, no tenant reply or manager approval needed.'
+              : 'GREEN priority — logged for records only. No tenant reply or manager approval needed.'}
           </Typography>
         )}
       </Box>

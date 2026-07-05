@@ -9,12 +9,13 @@ from agents.triage.classifier import ClassificationResult
 
 logger = logging.getLogger(__name__)
 
-UrgencyTier = Literal["RED", "YELLOW", "GREEN"]
+UrgencyTier = Literal["RED", "YELLOW", "GREEN", "SPAM"]
 
 # Labeled tiers from tests/fixtures/eval_urgency_labeled.json (demo-critical ids only).
 DEMO_GROUND_TRUTH: dict[str, UrgencyTier] = {
     "email-001": "RED",
     "email-006": "YELLOW",
+    "email-010": "SPAM",
 }
 
 

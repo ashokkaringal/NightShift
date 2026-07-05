@@ -91,6 +91,33 @@ def test_sidebar_counts() -> None:
     assert counts["staged"] >= 2
     assert counts["urgent_red"] >= 1
     assert counts["yellow"] >= 1
+    assert counts["spam_unread"] == 0
+
+
+def test_spam_unread_count_and_mark_read() -> None:
+    session = SessionLocal()
+    try:
+        _seed_draft(
+            session,
+            id="draft-spam",
+            raw_item_id="email-010",
+            urgency_tier="SPAM",
+            summary="SPAM – gift card scam",
+            draft_text="(No tenant reply drafted — flagged as SPAM per NightShift policy)",
+        )
+    finally:
+        session.close()
+
+    counts = client.get("/sidebar-counts").json()
+    assert counts["spam"] == 1
+    assert counts["spam_unread"] == 1
+
+    resp = client.post("/drafts/draft-spam/mark-read")
+    assert resp.status_code == 200
+
+    counts_after = client.get("/sidebar-counts").json()
+    assert counts_after["spam"] == 1
+    assert counts_after["spam_unread"] == 0
 
 
 def test_inbox_yellow_filter() -> None:
@@ -112,6 +139,43 @@ def test_inbox_yellow_filter() -> None:
     assert len(data) == 1
     assert data[0]["urgency_tier"] == "YELLOW"
     assert data[0]["raw_item_id"] == "email-006"
+
+
+def test_item_detail_returns_draft_text_alt() -> None:
+    session = SessionLocal()
+    try:
+        _seed_draft(
+            session,
+            id="draft-dual",
+            draft_text="Option A action-focused body.",
+            draft_text_alt="Option B empathetic body.",
+        )
+    finally:
+        session.close()
+    detail = client.get("/items/draft-dual").json()
+    assert detail["draft_text"] == "Option A action-focused body."
+    assert detail["draft_text_alt"] == "Option B empathetic body."
+
+
+def test_edit_approve_persists_selected_variant() -> None:
+    session = SessionLocal()
+    try:
+        _seed_draft(
+            session,
+            id="draft-dual-approve",
+            draft_text="Option A action-focused body.",
+            draft_text_alt="Option B empathetic body.",
+        )
+    finally:
+        session.close()
+    resp = client.post(
+        "/drafts/draft-dual-approve/edit-approve",
+        json={"manager": "Maria Santos", "text": "Option B empathetic body."},
+    )
+    assert resp.status_code == 200
+    detail = client.get("/items/draft-dual-approve").json()
+    assert detail["status"] == "approved"
+    assert detail["draft_text"] == "Option B empathetic body."
 
 
 def test_item_detail_enriches_fixture() -> None:

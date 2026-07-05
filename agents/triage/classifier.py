@@ -16,7 +16,7 @@ from agents.triage.prompts import CLASSIFICATION_SYSTEM
 
 logger = logging.getLogger(__name__)
 
-UrgencyTier = Literal["RED", "YELLOW", "GREEN"]
+UrgencyTier = Literal["RED", "YELLOW", "GREEN", "SPAM"]
 DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_TRIAGE_MODEL", "gemini-2.5-flash")
 TRIAGE_MODEL_CANDIDATES = model_candidates("GEMINI_TRIAGE_MODEL", "gemini-2.5-flash,gemini-3.5-flash")
 
@@ -38,6 +38,22 @@ def use_gemini_classifier(raw_item_id: str | None = None) -> bool:
 def classify_with_rules(raw_text: str) -> ClassificationResult:
     """Deterministic fallback — keeps CI green without an API key."""
     text = raw_text.lower()
+
+    spam_patterns = (
+        "gift card",
+        "claim your prize",
+        "click here to claim",
+        "you have won",
+        "you've won",
+        "limited-time offer",
+        "limited time offer",
+        "act now",
+        "act fast",
+        "viagra",
+        "lottery",
+        "wire transfer",
+        "congratulations!",
+    )
 
     red_patterns = (
         "water stain",
@@ -83,8 +99,11 @@ def classify_with_rules(raw_text: str) -> ClassificationResult:
         "no response needed",
     )
 
-    if any(p in text for p in red_patterns):
-        tier: UrgencyTier = "RED"
+    if any(p in text for p in spam_patterns):
+        tier: UrgencyTier = "SPAM"
+        rationale = "Matches unsolicited marketing/phishing SPAM pattern — no tenant reply drafted."
+    elif any(p in text for p in red_patterns):
+        tier = "RED"
         rationale = "Matches safety, habitability, or code-violation RED pattern."
     elif any(p in text for p in yellow_patterns):
         tier = "YELLOW"

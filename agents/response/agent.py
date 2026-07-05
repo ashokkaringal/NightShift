@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from agents.response.draft_reply_engine import (
     DraftInput,
     extract_deadline,
+    generate_draft_reply_alt,
     infer_source_type,
     show_gas_911_banner,
 )
@@ -19,6 +20,7 @@ from models.core import ClassifiedItem, Draft
 
 MANAGER_NAME = "Maria Santos"
 GREEN_NO_REPLY = "(No tenant reply drafted — GREEN priority per NightShift policy)"
+SPAM_NO_REPLY = "(No tenant reply drafted — flagged as SPAM per NightShift policy)"
 
 
 def build_draft_context(classified: ClassifiedItem) -> tuple[DraftContext, DraftInput]:
@@ -68,6 +70,8 @@ def build_draft_context(classified: ClassifiedItem) -> tuple[DraftContext, Draft
 
 def build_draft_text(classified: ClassifiedItem) -> tuple[str, str | None]:
     """Return (draft_text, source_tag) — Gemini model id or rules template_id."""
+    if classified.urgency_tier == "SPAM":
+        return SPAM_NO_REPLY, None
     if classified.urgency_tier == "GREEN":
         return GREEN_NO_REPLY, None
 
@@ -78,6 +82,27 @@ def build_draft_text(classified: ClassifiedItem) -> tuple[str, str | None]:
     return body, source_tag
 
 
+def build_draft_variants(classified: ClassifiedItem) -> tuple[str, str | None, str | None]:
+    """Return (primary_text, alternate_text, source_tag).
+
+    Primary uses Gemini when available (else rules Option A). The alternate is the
+    deterministic rules-based empathetic variant (Option B) so Maria always has a
+    second choice; None for GREEN/SPAM which have no tenant reply.
+    """
+    if classified.urgency_tier in ("SPAM", "GREEN"):
+        primary, source_tag = build_draft_text(classified)
+        return primary, None, source_tag
+
+    ctx, inp = build_draft_context(classified)
+    body, source_tag = generate_draft(ctx, inp)
+    if not body:
+        return GREEN_NO_REPLY, None, source_tag
+
+    alt_out = generate_draft_reply_alt(inp)
+    alternate = alt_out.body if alt_out.status == "DRAFT" and alt_out.body else None
+    return body, alternate, source_tag
+
+
 class ResponseAgent:
     name = "ResponseAgent"
 
@@ -86,9 +111,13 @@ class ResponseAgent:
         from security.output_validation import assert_draft_output_safe, validate_draft_output
 
         with agent_span("response", backend=self.backend_name()):
-            draft_text, _source_tag = build_draft_text(classified)
+            draft_text, draft_text_alt, _source_tag = build_draft_variants(classified)
             warnings = validate_draft_output(draft_text, classified)
             assert_draft_output_safe(draft_text, classified)
+            if draft_text_alt:
+                if validate_draft_output(draft_text_alt, classified):
+                    # Drop the alternate rather than surface an unsafe/invalid variant.
+                    draft_text_alt = None
             if warnings:
                 set_attributes(output_validation_warnings=len(warnings))
 
@@ -96,6 +125,7 @@ class ResponseAgent:
             id=f"draft-{classified.id}",
             classified_item_id=classified.id,
             draft_text=draft_text,
+            draft_text_alt=draft_text_alt,
             status="staged",
             approved_by=None,
             approved_at=None,
@@ -108,6 +138,7 @@ class ResponseAgent:
             urgency_tier=classified.urgency_tier,
             summary=classified.summary,
             draft_text=draft.draft_text,
+            draft_text_alt=draft.draft_text_alt,
             status=draft.status,
             approved_by=draft.approved_by,
             approved_at=draft.approved_at,

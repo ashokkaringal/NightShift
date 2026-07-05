@@ -20,8 +20,10 @@ NightShift drafts. It never sends — phase 1 has no outbound send path; the dat
 
 - Python 3.11+
 - Google ADK 2.0 multi-agent graph (`agents/adk/graph.py`)
-- Gemini 1.5 Flash (triage) / Pro (drafting) via `GEMINI_API_KEY`
+- Gemini 2.5 Flash (triage + drafting when live) via `GEMINI_API_KEY`
 - Shared contracts: `models/core.py` only — no duplicate data shapes
+- Urgency tiers: `RED`, `YELLOW`, `GREEN`, `SPAM`
+- Dual drafts: `draft_text` (primary) + `draft_text_alt` (empathetic rules variant) on RED/YELLOW
 
 ## Commands
 

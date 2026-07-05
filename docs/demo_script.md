@@ -86,7 +86,7 @@ Voiceover hook:
 
 Show [`docs/architecture.png`](../docs/architecture.png):
 
-> "Read-only MCP tools return `RawItem` objects. Phase 1 uses fixtures; **phase 2** swaps `read_inbox` for Gmail read-only without touching the ADK graph or HITL database. NightShift still never sends."
+> "**SupervisorNode** orchestrates the overnight batch — it is not a chain where Ingestion hands off to Triage hands off to Response. Step one: Supervisor calls **IngestionAgent**, which **calls** the read-only MCP tools and returns a list of `RawItem`s. Step two: for each item, Supervisor calls **TriageAgent**, then **ResponseAgent**, which writes a **staged** draft to SQLite. Phase 1 uses fixture MCP; **phase 2** swaps the MCP loader behind `read_inbox` without changing Supervisor or HITL. NightShift still never sends."
 
 ## Beat 3 — Manager approve (30 sec)
 
@@ -119,6 +119,17 @@ With API on `:8001` and UI on `:5173`:
 4. Optional: **Reject**, **Snooze**, or edit text + **Save edits** on a YELLOW item (`email-006`)
 
 GREEN items show **NO REPLY** — no Approve button (PRD non-goal: no auto-send even for GREEN).
+
+**Dual draft picker (RED / YELLOW):** Open `email-003` (no heat, RED) or `email-006` (YELLOW). Scroll to **NightShift draft reply** — two stacked options:
+
+1. **Option A — Action-focused** (vendor timeline; may be Gemini on live subset)
+2. **Option B — Empathetic** (warmer tone; rules template)
+
+Click Option B → **Approve draft** — chosen text is saved via `edit-approve`. Voiceover:
+
+> "NightShift gives Maria two tone options — she picks one, edits if needed, then approves. Still no send path in phase 1."
+
+**Spam folder:** Sidebar **Spam** shows `email-010` (gift-card scam). Folder is dark blue while unread; click the message to mark read (`POST /drafts/{id}/mark-read`). No HITL approve for SPAM.
 
 **Regression check:** reject on a staged item keeps the detail pane on the same message (Playwright: `bash scripts/run_ui_e2e.sh`).
 

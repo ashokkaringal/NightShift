@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -28,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-TIER_ORDER = {"RED": 0, "YELLOW": 1, "GREEN": 2, "UNKNOWN": 3}
+TIER_ORDER = {"RED": 0, "YELLOW": 1, "GREEN": 2, "SPAM": 3, "UNKNOWN": 4}
 NO_REPLY_DRAFT_PREFIX = "(No tenant reply drafted"
 
 
@@ -69,6 +69,7 @@ class AttachmentDetail(BaseModel):
 
 class InboxDetail(InboxItem):
     draft_text: str | None = None
+    draft_text_alt: str | None = None
     summary: str | None = None
     reasoning: str | None = None
     tenant_email: str | None = None
@@ -83,7 +84,7 @@ class InboxDetail(InboxItem):
 
 
 def _requires_hitl(row: DraftRow) -> bool:
-    if row.urgency_tier == "GREEN":
+    if row.urgency_tier in ("GREEN", "SPAM"):
         return False
     if (row.draft_text or "").startswith(NO_REPLY_DRAFT_PREFIX):
         return False
@@ -95,6 +96,8 @@ class SidebarCounts(BaseModel):
     staged: int
     urgent_red: int
     yellow: int
+    spam: int
+    spam_unread: int
     approved: int
     snoozed: int
     rejected: int
@@ -183,11 +186,15 @@ def sidebar_counts(run_id: str | None = None) -> SidebarCounts:
     try:
         drafts = _query_drafts(db, run_id=run_id)
         failed = _query_failed(db, run_id=run_id)
+        spam = sum(1 for d in drafts if d.urgency_tier == "SPAM")
+        spam_unread = sum(1 for d in drafts if d.urgency_tier == "SPAM" and d.read_at is None)
         return SidebarCounts(
-            inbox=len(drafts) + len(failed),
-            staged=sum(1 for d in drafts if d.status == "staged"),
+            inbox=(len(drafts) - spam) + len(failed),
+            staged=sum(1 for d in drafts if d.status == "staged" and d.urgency_tier != "SPAM"),
             urgent_red=sum(1 for d in drafts if d.urgency_tier == "RED"),
             yellow=sum(1 for d in drafts if d.urgency_tier == "YELLOW"),
+            spam=spam,
+            spam_unread=spam_unread,
             approved=sum(1 for d in drafts if d.status == "approved"),
             snoozed=sum(1 for d in drafts if d.status == "snoozed"),
             rejected=sum(1 for d in drafts if d.status == "rejected"),
@@ -257,6 +264,8 @@ def inbox(
             urgency = "RED"
         elif filter == "yellow":
             urgency = "YELLOW"
+        elif filter == "spam":
+            urgency = "SPAM"
         elif filter == "approved":
             status = "approved"
         elif filter == "snoozed":
@@ -267,6 +276,8 @@ def inbox(
         items: list[InboxItem] = []
         if filter != "failed":
             drafts = _query_drafts(db, run_id=run_id, urgency=urgency, status=status)
+            if filter != "spam":
+                drafts = [r for r in drafts if r.urgency_tier != "SPAM"]
             items.extend(_draft_to_item(r) for r in drafts)
         if filter in ("inbox", "failed"):
             items.extend(_failed_to_item(r) for r in _query_failed(db, run_id=run_id))
@@ -311,6 +322,7 @@ def item_detail(item_id: str) -> InboxDetail:
             return InboxDetail(
                 **payload,
                 draft_text=row.draft_text,
+                draft_text_alt=row.draft_text_alt,
                 summary=row.summary,
                 reasoning=reasoning or None,
                 tenant_email=enrich.get("tenant_email"),
@@ -360,6 +372,23 @@ def download_attachment(raw_item_id: str, filename: str) -> FileResponse:
         media_type="application/pdf",
         filename=safe_name,
     )
+
+
+@app.post("/drafts/{draft_id}/mark-read")
+def api_mark_read(draft_id: str) -> dict:
+    db = _session()
+    try:
+        row = db.get(DraftRow, draft_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail=f"Draft not found: {draft_id}")
+        if row.urgency_tier != "SPAM":
+            raise HTTPException(status_code=400, detail="Only spam drafts can be marked read")
+        if row.read_at is None:
+            row.read_at = datetime.now(timezone.utc)
+            db.commit()
+        return {"id": row.id, "read_at": row.read_at.isoformat() if row.read_at else None}
+    finally:
+        db.close()
 
 
 @app.post("/drafts/{draft_id}/approve")

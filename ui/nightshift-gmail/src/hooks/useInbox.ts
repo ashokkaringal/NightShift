@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   approveDraft,
+  editApproveDraft,
   fetchInbox,
   fetchItemDetail,
   fetchOvernightRuns,
   fetchSidebarCounts,
+  markSpamRead,
   rejectDraft,
   saveDraft,
   snoozeDraft,
@@ -22,6 +24,8 @@ const EMPTY_COUNTS: SidebarCounts = {
   staged: 0,
   urgent_red: 0,
   yellow: 0,
+  spam: 0,
+  spam_unread: 0,
   approved: 0,
   snoozed: 0,
   rejected: 0,
@@ -73,6 +77,22 @@ export function useInbox() {
     void refresh()
   }, [refresh])
 
+  const selectItem = useCallback(
+    (id: string) => {
+      setSelectedId(id)
+      if (filter !== 'spam') return
+      const item = items.find((i) => i.id === id)
+      if (item?.urgency_tier !== 'SPAM') return
+      void markSpamRead(id)
+        .then(() => fetchSidebarCounts(runId))
+        .then(setCounts)
+        .catch(() => {
+          /* keep current counts on failure */
+        })
+    },
+    [filter, items, runId],
+  )
+
   useEffect(() => {
     if (!selectedId) {
       setDetail(null)
@@ -97,12 +117,20 @@ export function useInbox() {
   }, [selectedId])
 
   const hitlAction = useCallback(
-    async (action: 'approve' | 'reject' | 'snooze' | 'save', managerOrText?: string) => {
+    async (
+      action: 'approve' | 'reject' | 'snooze' | 'save',
+      managerOrText?: string,
+      text?: string,
+    ) => {
       if (!selectedId || !detail || detail.kind !== 'draft' || detail.requires_hitl === false) return
       const actedId = selectedId
       try {
         if (action === 'approve' && managerOrText) {
-          await approveDraft(actedId, managerOrText)
+          if (text !== undefined) {
+            await editApproveDraft(actedId, managerOrText, text)
+          } else {
+            await approveDraft(actedId, managerOrText)
+          }
         } else if (action === 'reject') {
           await rejectDraft(actedId)
         } else if (action === 'snooze') {
@@ -133,12 +161,13 @@ export function useInbox() {
     counts,
     runs,
     selectedId,
-    setSelectedId,
+    selectItem,
     detail,
     loading,
     detailLoading,
     error,
     refresh,
     hitlAction,
+    unreadSpam: counts.spam_unread,
   }
 }

@@ -68,6 +68,7 @@ export const tierTokens: Record<string, TierToken> = {
   RED: { bg: '#fce8e6', soft: '#fef3f2', text: '#c5221f', accent: '#d93025' },
   YELLOW: { bg: '#fef7e0', soft: '#fffbf0', text: '#b06000', accent: '#f9ab00' },
   GREEN: { bg: '#e6f4ea', soft: '#f2faf4', text: '#137333', accent: '#188038' },
+  SPAM: { bg: '#f1f3f4', soft: '#f8f9fa', text: '#5f6368', accent: '#9aa0a6' },
 }
 
 export const neutralTier: TierToken = {
