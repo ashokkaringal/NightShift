@@ -100,6 +100,21 @@ See [`mcp/README.md`](mcp/README.md) for MCP endpoint contracts.
 
 Source SVG: [`docs/architecture.svg`](docs/architecture.svg)
 
+**Diagram legend** (matches the figure above):
+
+| Box / flow | Meaning |
+|------------|---------|
+| **SupervisorNode** | Python orchestrator — dispatches agents; does not call Gemini or MCP directly |
+| **Ingestion / Triage / Response** | Three peer agents inside the orchestration zone; **agents never call each other** |
+| **MCP Mock Server** | Read-only fixtures (`read_inbox`, HOA, invoices); Ingestion **calls** MCP and returns `RawItem[]` |
+| **Gemini API** | Flash ← Triage Agent; Flash ← Response Agent; rules/templates fallback when stub or no key |
+| **Memory Store** | Key/value JSON lookup (phase 1); Triage + Response **read** mid-run |
+| **Violet dashed arrow → Memory** | Offline write via `memory/consolidate.py` — between batches only, never mid-run |
+| **SQLite HITL DB** | `drafts` (staged → approved) + `overnight_runs` run metadata; FSM blocks auto-send |
+| **Manager UI + API** | Approve / Reject / Snooze; reads/writes drafts through the same HITL layer |
+
+**Arrow key:** navy = Supervisor → agent dispatch · teal = Ingestion ↔ MCP · grey dashed = Memory → agent (read) · grey solid = Response → SQLite (`staged`) · grey dashed from Supervisor = run metadata · orange dashed = agent → Gemini · violet dashed = offline memory consolidation · blue dashed = UI → DB.
+
 **Swap-in point:** only MCP loaders change between phase 1 (fixtures) and phase 2 (e.g. Gmail read-only). **SupervisorNode** and the three agents stay the same; IngestionAgent still **calls** MCP read tools and returns `RawItem` objects.
 
 **Runtime vs diagram:** Overnight processing is orchestrated by `SupervisorNode` — it calls Ingestion once, then Triage and Response per item. Agents do not call each other. The ADK `SequentialAgent` declares the three-agent topology for `python main.py --dry-run`. **Memory store** is JSON key/value lookup only (no vector DB in phase 1). **ResponseAgent** writes `draft_text` + optional `draft_text_alt`; at most **one** Gemini call per item (Option A when live; Option B is rules-only empathetic templates).
