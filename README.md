@@ -25,13 +25,13 @@ python scripts/generate_pdf_fixtures.py
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # default: rules stub (TRIAGE_USE_STUB=1, DRAFT_USE_STUB=1)
+cp .env.example .env   # add your GEMINI_API_KEY — default uses live Gemini on demo subset
 
-# To verify live Gemini on demo subset: set stub flags to 0 and add GEMINI_API_KEY
+# Optional rules-only mode (no API calls): set TRIAGE_USE_STUB=1 and DRAFT_USE_STUB=1
 
 python db/init_db.py
 python main.py --dry-run          # verify ADK 2.0 graph
-python main.py run-overnight      # full stub pipeline
+python main.py run-overnight      # overnight pipeline (Gemini on GEMINI_LIVE_ONLY_IDS when keyed)
 
 # MCP mock server (separate terminal)
 uvicorn mcp.server:app --reload --port 8000

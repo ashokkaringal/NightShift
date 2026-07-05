@@ -233,7 +233,7 @@ Overnight batch metadata (`overnight_runs`: processed count, failed count, times
 
 ## Limitations and phase 2
 
-- **Rules stub vs live Gemini:** `.env.example` defaults to `TRIAGE_USE_STUB=1` and `DRAFT_USE_STUB=1` for reproducible judge runs (logs show `rules-stub` / `rules-template`). Set both to `0` and add `GEMINI_API_KEY` to verify live Gemini on `GEMINI_LIVE_ONLY_IDS`.
+- **Rules stub vs live Gemini:** `.env.example` defaults to `TRIAGE_USE_STUB=0` and `DRAFT_USE_STUB=0` — add `GEMINI_API_KEY` and `run-overnight` hits Gemini Flash on `GEMINI_LIVE_ONLY_IDS` (logs show model backends). Set both stub flags to `1` for deterministic rules-only runs (matches `eval-urgency` without a key).
 - **PDF scope:** Machine-readable PDF text extraction only — no OCR for scanned documents in phase 1.
 - **Memory:** JSON key/value files under `memory/data/`; production would use a shared store with nightly consolidation only (no vector DB in phase 1).
 - **SQLite:** Single-writer; production would use Postgres with the same FSM logic.
@@ -248,10 +248,10 @@ git clone https://github.com/ashokkaringal/NightShift.git
 cd NightShift
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # default: rules stub (no Gemini calls)
+cp .env.example .env          # add GEMINI_API_KEY — default uses live Gemini on demo subset
 
-# Optional live Gemini check: TRIAGE_USE_STUB=0, DRAFT_USE_STUB=0, GEMINI_API_KEY=<key>
-# run-overnight logs show backend names; live subset = GEMINI_LIVE_ONLY_IDS
+# Optional rules-only: TRIAGE_USE_STUB=1, DRAFT_USE_STUB=1 (logs show rules-stub / rules-template)
+# run-overnight prints backend names; live subset = GEMINI_LIVE_ONLY_IDS
 
 python scripts/generate_pdf_fixtures.py
 bash scripts/rebuild_dev_db.sh
