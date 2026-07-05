@@ -24,9 +24,9 @@ Point at the safety banner:
 
 > "Phase 1 records manager approval only — there is no outbound send path."
 
-## Gemini live subset (optional)
+## Gemini live subset (optional — override default stub)
 
-For live Gemini triage + drafting on demo fixtures only (saves quota):
+`.env.example` ships with `TRIAGE_USE_STUB=1` and `DRAFT_USE_STUB=1` (rules only). For live Gemini triage + drafting on demo fixtures only (saves quota):
 
 ```bash
 TRIAGE_USE_STUB=0
