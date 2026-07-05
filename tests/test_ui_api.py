@@ -69,6 +69,7 @@ def test_inbox_lists_drafts() -> None:
     assert len(data) >= 1
     assert data[0]["kind"] == "draft"
     assert data[0]["urgency_tier"] == "RED"
+    assert data[0]["display_time"] == "Jun 29, 2026, 23:15"
 
 
 def test_sidebar_counts() -> None:

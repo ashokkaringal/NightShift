@@ -90,9 +90,9 @@ export const layout = {
   detailMinWidth: 420,
 }
 
-/** Shared grid for inbox header + rows (accent | checkbox | sender | priority | subject | status | time). */
+/** Shared grid for inbox header + rows (accent | checkbox | sender | priority | subject | status | date/time). */
 export const messageListGrid = {
-  columns: '3px 22px 76px 68px minmax(0, 1fr) auto 42px',
+  columns: '3px 22px 76px 68px minmax(0, 1fr) auto 128px',
   gap: 0.5,
   rowPadding: { pl: 0, pr: 1, py: 0.65 },
   headerPadding: { pl: 0, pr: 1, py: 0.75 },

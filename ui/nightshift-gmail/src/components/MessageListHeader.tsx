@@ -32,7 +32,7 @@ export default function MessageListHeader() {
       <Typography sx={headerCell}>Priority</Typography>
       <Typography sx={headerCell}>Subject</Typography>
       <Typography sx={{ ...headerCell, textAlign: 'right' }}>Response status</Typography>
-      <Typography sx={{ ...headerCell, textAlign: 'right' }}>Timing</Typography>
+      <Typography sx={{ ...headerCell, textAlign: 'right' }}>Date & time</Typography>
     </Box>
   )
 }

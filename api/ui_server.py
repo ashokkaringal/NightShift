@@ -125,15 +125,22 @@ def _parse_subject(summary: str | None) -> tuple[str, str]:
     return subject[:80] or "Overnight item", ""
 
 
-def _format_time(value: datetime | str | None) -> str | None:
+def _parse_datetime(value: datetime | str | None) -> datetime | None:
     if value is None:
         return None
-    if isinstance(value, str):
-        try:
-            value = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return None
-    return value.strftime("%H:%M")
+    if isinstance(value, datetime):
+        return value
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _format_display_datetime(value: datetime | str | None) -> str | None:
+    parsed = _parse_datetime(value)
+    if parsed is None:
+        return None
+    return parsed.strftime("%b %d, %Y, %H:%M")
 
 
 def _draft_to_item(row: DraftRow) -> InboxItem:
@@ -142,7 +149,9 @@ def _draft_to_item(row: DraftRow) -> InboxItem:
     body_text = enrich.get("body_text") or raw_text
     subject = enrich.get("subject") or derive_message_subject(body_text)
     preview = message_snippet(body_text) or row.summary or subject
-    display_time = _format_time(row.approved_at) or _format_time(enrich.get("received_at"))
+    display_time = _format_display_datetime(row.approved_at) or _format_display_datetime(
+        enrich.get("received_at")
+    )
     return InboxItem(
         id=row.id,
         kind="draft",
@@ -169,7 +178,7 @@ def _failed_to_item(row: FailedItemRow) -> InboxItem:
         preview=row.error_detail[:120],
         urgency_tier=None,
         status="failed",
-        display_time=_format_time(row.created_at),
+        display_time=_format_display_datetime(row.created_at),
         run_id=row.run_id,
         error_detail=row.error_detail,
     )
