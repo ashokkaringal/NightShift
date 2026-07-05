@@ -52,9 +52,24 @@ A **SupervisorNode** (plain Python, no LLM) routes each item, isolates failures 
 
 ## Architecture
 
-![NightShift architecture](../docs/architecture.png)
+![NightShift architecture](architecture.png)
 
-*Embed the diagram above in the Kaggle writeup editor. Source: `docs/architecture.svg`.*
+*For Kaggle: upload a fresh copy of `docs/architecture.png` from the repo (Kaggle does not pull GitHub image URLs). Source SVG: `docs/architecture.svg`.*
+
+**Diagram legend** (matches the figure above):
+
+| Box / flow | Meaning |
+|------------|---------|
+| **SupervisorNode** | Python orchestrator — dispatches agents; does not call Gemini or MCP directly |
+| **Ingestion / Triage / Response** | Three peer agents inside the orchestration zone; **agents never call each other** |
+| **MCP Mock Server** | Read-only fixtures; Ingestion **calls** MCP and returns `RawItem[]` |
+| **Gemini API** | Flash ← Triage Agent; Flash ← Response Agent; rules/templates fallback when stub or no key |
+| **Memory Store** | Key/value JSON lookup (phase 1); Triage + Response **read** mid-run |
+| **Violet dashed arrow → Memory** | Offline write via `memory/consolidate.py` — between batches only |
+| **SQLite HITL DB** | `drafts` (staged → approved) + `overnight_runs`; FSM blocks auto-send |
+| **Manager UI + API** | Approve / Reject / Snooze; reads/writes drafts through the same HITL layer |
+
+**Arrow key:** navy = Supervisor → agent · teal = Ingestion ↔ MCP · grey dashed = Memory → agent (read) · grey solid = Response → SQLite (`staged`) · orange dashed = agent → Gemini · violet dashed = offline memory consolidation · blue dashed = UI → DB.
 
 **Important — how the pipeline actually runs:** `python main.py run-overnight` uses **`SupervisorNode`** (`agents/supervisor.py`), not a direct agent-to-agent chain. The supervisor:
 
@@ -255,7 +270,7 @@ bash scripts/run_ui_e2e.sh
 
 ## Team and acknowledgments
 
-Built for the Google & Kaggle 5-Day AI Agents Intensive (Vibe Coding), Agents for Business track. Spec-driven development guided by PRD/TDD/Gherkin features. Gemini 2.5 Flash (triage) and Gemini 2.5 Flash / Pro (drafting) via Google AI Studio when live mode is enabled.
+Built for the Google & Kaggle 5-Day AI Agents Intensive (Vibe Coding), Agents for Business track. Spec-driven development guided by PRD/TDD/Gherkin features. Gemini 2.5 Flash (triage and drafting; at most one call per item on the primary draft) via Google AI Studio when live mode is enabled.
 
 ---
 
